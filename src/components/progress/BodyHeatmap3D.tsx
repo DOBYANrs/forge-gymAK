@@ -73,7 +73,7 @@ export default function BodyHeatmap3D({ muscleScores, height = 400 }: BodyHeatma
     return map;
   }, [muscleScores]);
 
-  // Apply tier colors to the model
+  // Apply tier colors to the model — BRIGHT and VIVID
   const applyColors = (model: THREE.Group) => {
     model.traverse((child) => {
       if (child instanceof THREE.Mesh) {
@@ -82,28 +82,32 @@ export default function BodyHeatmap3D({ muscleScores, height = 400 }: BodyHeatma
         const score = muscle ? scoresMap.get(muscle) : undefined;
 
         if (score && score.score > 0) {
-          const color = new THREE.Color(score.tier.color);
-          const emissiveIntensity = score.score >= 1000 ? 0.4 : score.score >= 500 ? 0.2 : 0.1;
-          const emissive = new THREE.Color(score.tier.color).multiplyScalar(emissiveIntensity);
+          // Brighten the tier color significantly
+          const baseColor = new THREE.Color(score.tier.color);
+          const brightColor = baseColor.clone().lerp(new THREE.Color(0xffffff), 0.25);
+          // Strong emissive so muscles GLOW
+          const emissiveStrength = score.score >= 4000 ? 1.0 : score.score >= 2000 ? 0.8 : score.score >= 1000 ? 0.6 : score.score >= 500 ? 0.45 : 0.3;
+          const emissive = baseColor.clone().multiplyScalar(emissiveStrength);
 
           child.material = new THREE.MeshStandardMaterial({
-            color,
+            color: brightColor,
             emissive,
-            emissiveIntensity: emissiveIntensity,
-            roughness: 0.5,
-            metalness: 0.1,
-            transparent: true,
-            opacity: 0.9,
+            emissiveIntensity: emissiveStrength * 1.5,
+            roughness: 0.35,
+            metalness: 0.15,
+            transparent: false,
+            opacity: 1.0,
           });
         } else {
-          // Default: dark with subtle visibility
+          // Untrained muscles — visible but muted
           child.material = new THREE.MeshStandardMaterial({
-            color: new THREE.Color(0x1a1a2e),
-            emissive: new THREE.Color(0x000000),
-            roughness: 0.7,
+            color: new THREE.Color(0x2a2e3d),
+            emissive: new THREE.Color(0x111122),
+            emissiveIntensity: 0.15,
+            roughness: 0.6,
             metalness: 0.05,
-            transparent: true,
-            opacity: 0.6,
+            transparent: false,
+            opacity: 1.0,
           });
         }
 
@@ -130,30 +134,35 @@ export default function BodyHeatmap3D({ muscleScores, height = 400 }: BodyHeatma
     camera.position.set(0, 0.5, 4);
     camera.lookAt(0, 0, 0);
 
-    // Renderer
+    // Renderer — high exposure for bright colors
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(width, h);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setClearColor(0x0B0C10, 1);
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.2;
+    renderer.toneMappingExposure = 2.0;
     container.appendChild(renderer.domElement);
 
-    // Lights — dramatic studio lighting
-    const ambientLight = new THREE.AmbientLight(0x404060, 0.5);
+    // Lights — BRIGHT studio lighting so colors pop
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
     scene.add(ambientLight);
 
-    const keyLight = new THREE.DirectionalLight(0xffffff, 1.2);
+    const keyLight = new THREE.DirectionalLight(0xffffff, 2.0);
     keyLight.position.set(3, 4, 5);
     scene.add(keyLight);
 
-    const fillLight = new THREE.DirectionalLight(0x4488ff, 0.4);
+    const fillLight = new THREE.DirectionalLight(0x88aaff, 1.0);
     fillLight.position.set(-3, 2, -2);
     scene.add(fillLight);
 
-    const rimLight = new THREE.DirectionalLight(0xff5e00, 0.3);
+    const rimLight = new THREE.DirectionalLight(0xff8844, 0.8);
     rimLight.position.set(0, -2, -4);
     scene.add(rimLight);
+
+    // Extra top light for even illumination
+    const topLight = new THREE.DirectionalLight(0xffffff, 0.6);
+    topLight.position.set(0, 5, 0);
+    scene.add(topLight);
 
     // Ground plane with subtle reflection
     const groundGeo = new THREE.PlaneGeometry(10, 10);
