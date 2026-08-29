@@ -7,6 +7,8 @@ import { calculate1RM } from './calculations';
 // ============================================================
 const BASELINE_MULTIPLIERS: Record<string, number> = {
   'Quads': 3.0,
+  'Hamstrings': 1.5,
+  'Calves': 1.0,
   'Chest': 1.2,
   'Back': 1.2,
   'Lats': 1.2,
@@ -16,24 +18,20 @@ const BASELINE_MULTIPLIERS: Record<string, number> = {
   'Forearms': 0.3,
   'Abs': 0.3,
   'Core': 0.3,
-  'Legs': 3.0, // Alias for Quads
-  'Hamstrings': 1.5,
-  'Calves': 1.0,
 };
 
 // Target focus weight: 1.0 for primary, 0.5 for secondary
 const FOCUS_WEIGHT: Record<string, number> = {
   'Chest': 1.0,
   'Back': 1.0,
-  'Legs': 1.0,
   'Quads': 1.0,
+  'Hamstrings': 1.0,
+  'Calves': 0.5,
   'Shoulders': 1.0,
   'Biceps': 1.0,
   'Triceps': 1.0,
   'Abs': 1.0,
   'Core': 1.0,
-  'Hamstrings': 0.5,
-  'Calves': 0.5,
   'Forearms': 0.5,
   'Lats': 0.5,
 };
@@ -78,12 +76,12 @@ const EXERCISE_MUSCLE_TARGET: Record<string, { primary: string[]; secondary: str
   'Overhead Press': { primary: ['Shoulders'], secondary: ['Chest'] },
   'Biceps Curl': { primary: ['Biceps'], secondary: ['Forearms'] },
   'Spider Curl': { primary: ['Biceps'], secondary: [] },
-  // Tuesday: Back A + Legs A + Abs A
+  // Tuesday: Back A + Legs A (Quad Focus) + Abs A
   'Pull Up': { primary: ['Back', 'Lats'], secondary: ['Biceps'] },
   '1-Hand Lat Pulldown': { primary: ['Lats', 'Back'], secondary: [] },
   'Row Machine Var 1': { primary: ['Back'], secondary: ['Biceps'] },
-  'Low-Foot Placement Leg Press': { primary: ['Quads', 'Legs'], secondary: ['Hamstrings'] },
-  'Leg Extension': { primary: ['Quads', 'Legs'], secondary: [] },
+  'Low-Foot Placement Leg Press': { primary: ['Quads'], secondary: ['Hamstrings'] },
+  'Leg Extension': { primary: ['Quads'], secondary: [] },
   'Cable Crunches': { primary: ['Abs', 'Core'], secondary: [] },
   // Thursday: Back B + Chest B + Abs B
   'Row Machine Var 2': { primary: ['Back'], secondary: ['Biceps'] },
@@ -99,10 +97,10 @@ const EXERCISE_MUSCLE_TARGET: Record<string, { primary: string[]; secondary: str
   'Cable Curl / Hammer Cable Curl': { primary: ['Biceps'], secondary: ['Forearms'] },
   'Wrist Flexion': { primary: ['Forearms'], secondary: [] },
   'Reverse Wrist Curl (Extension)': { primary: ['Forearms'], secondary: [] },
-  // Saturday: Legs B + Calves + Abs C
-  'Hamstring Curl': { primary: ['Hamstrings', 'Legs'], secondary: [] },
-  'Abduction Machine': { primary: ['Legs'], secondary: [] },
-  'Calf Raise': { primary: ['Calves', 'Legs'], secondary: [] },
+  // Saturday: Legs B (Hamstring/Hip) + Calves + Abs C
+  'Hamstring Curl': { primary: ['Hamstrings'], secondary: [] },
+  'Abduction Machine': { primary: ['Hamstrings'], secondary: ['Quads'] },
+  'Calf Raise': { primary: ['Calves'], secondary: [] },
   'Dead Hang': { primary: ['Back', 'Forearms'], secondary: [] },
   'Standard Floor Crunches / Hanging Knee Raises': { primary: ['Abs', 'Core'], secondary: [] },
 };
@@ -171,7 +169,7 @@ export function calculateAllMuscleScores(
   workoutData: Record<string, Record<string, { exercises: ExerciseLog[] } | undefined>>,
   userId: UserId,
 ): MuscleScore[] {
-  const muscles = ['Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps', 'Forearms', 'Legs', 'Abs'];
+  const muscles = ['Chest', 'Back', 'Shoulders', 'Quads', 'Hamstrings', 'Calves', 'Biceps', 'Triceps', 'Forearms', 'Abs'];
   const allExercises: ExerciseLog[] = [];
 
   // Gather ALL exercises from ALL time

@@ -26,14 +26,16 @@ const MESH_MUSCLE_MAP: Record<string, string> = {
   'tricep': 'Triceps', 'triceps': 'Triceps', 'triceps_brachii': 'Triceps',
   // Forearms
   'forearm': 'Forearms', 'forearms': 'Forearms', 'brachioradialis': 'Forearms',
-  // Legs / Quads
-  'quad': 'Legs', 'quads': 'Legs', 'quadriceps': 'Legs', 'thigh': 'Legs',
-  'thighs': 'Legs', 'leg': 'Legs', 'legs': 'Legs',
-  'vastus': 'Legs', 'rectus_femoris': 'Legs',
-  // Hamstrings
-  'hamstring': 'Legs', 'hamstrings': 'Legs',
+  // Quads (front of thigh)
+  'quad': 'Quads', 'quads': 'Quads', 'quadriceps': 'Quads', 'thigh': 'Quads',
+  'thighs': 'Quads', 'vastus': 'Quads', 'rectus_femoris': 'Quads',
+  'front_thigh': 'Quads', 'upper_leg_front': 'Quads',
+  // Hamstrings (back of thigh)
+  'hamstring': 'Hamstrings', 'hamstrings': 'Hamstrings', 'back_thigh': 'Hamstrings',
+  'upper_leg_back': 'Hamstrings', 'bicep_femoris': 'Hamstrings',
   // Calves
-  'calf': 'Legs', 'calves': 'Legs', 'gastrocnemius': 'Legs',
+  'calf': 'Calves', 'calves': 'Calves', 'gastrocnemius': 'Calves',
+  'lower_leg': 'Calves', 'soleus': 'Calves',
   // Abs
   'abs': 'Abs', 'abdominals': 'Abs', 'abdomen': 'Abs', 'core': 'Abs',
   'rectus_abdominis': 'Abs', 'obliques': 'Abs',
@@ -348,19 +350,37 @@ export default function BodyHeatmap3D({ muscleScores, height = 400 }: BodyHeatma
         </div>
       )}
 
-      {/* Hover tooltip */}
-      {hoveredMuscle && (
-        <div
-          className="absolute top-2 left-2 px-3 py-1.5 rounded-lg text-xs font-semibold pointer-events-none"
-          style={{
-            background: 'var(--bg-surface-elevated)',
-            border: 'var(--border-subtle)',
-            color: '#fff',
-          }}
-        >
-          {hoveredMuscle}: {hoveredScore} pts
-        </div>
-      )}
+      {/* Hover tooltip with tier */}
+      {hoveredMuscle && (() => {
+        const tier = scoresMap.get(hoveredMuscle)?.tier;
+        return (
+          <div
+            className="absolute top-2 left-2 px-3 py-2 rounded-lg pointer-events-none"
+            style={{
+              background: 'var(--bg-surface-elevated)',
+              border: `1px solid ${tier?.color ?? 'var(--border-subtle)'}`,
+              boxShadow: tier?.cssGlow !== 'none' ? tier?.cssGlow : undefined,
+            }}
+          >
+            <p className="text-xs font-bold" style={{ color: tier?.color ?? '#fff' }}>
+              {hoveredMuscle}
+            </p>
+            <div className="flex items-center gap-2 mt-0.5">
+              <span className="text-[10px] font-semibold" style={{ color: 'var(--text-muted)' }}>
+                {hoveredScore.toLocaleString()} pts
+              </span>
+              {tier && (
+                <span
+                  className="text-[9px] px-1.5 py-0.5 rounded-full font-bold"
+                  style={{ background: `${tier.color}20`, color: tier.color }}
+                >
+                  {tier.name}
+                </span>
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
       <p className="text-[10px] text-center mt-2" style={{ color: 'var(--text-muted)' }}>
         Drag to rotate · Hover muscles for details
