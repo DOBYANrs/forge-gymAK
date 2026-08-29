@@ -14,7 +14,7 @@ export default function BottomNav() {
       className="fixed bottom-0 left-0 right-0 safe-area-bottom z-50"
       style={{
         background: 'linear-gradient(135deg, rgba(15,15,26,0.95), rgba(22,22,40,0.9))',
-        borderTop: '1px solid rgba(251,191,36,0.08)',
+        borderTop: '1px solid rgba(255,94,0,0.08)',
         backdropFilter: 'blur(12px)',
         WebkitBackdropFilter: 'blur(12px)',
       }}
@@ -31,7 +31,7 @@ export default function BottomNav() {
               ${isActive ? 'scale-105' : 'opacity-50 hover:opacity-75'}
             `}
             style={({ isActive }: { isActive: boolean }) => ({
-              color: isActive ? '#fbbf24' : 'rgba(148,163,184,0.5)',
+              color: isActive ? '#FF5E00' : 'rgba(148,163,184,0.5)',
             })}
           >
             <span className="text-xl">{tab.icon}</span>

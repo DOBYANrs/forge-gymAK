@@ -9,7 +9,7 @@ import { formatDisplayDate } from '../utils/dates';
 const chartColors = {
   grid: 'rgba(255,255,255,0.05)',
   text: 'rgba(148,163,184,0.5)',
-  tooltip: { bg: 'rgba(22,22,40,0.95)', border: 'rgba(251,191,36,0.2)' },
+  tooltip: { bg: 'rgba(22,22,40,0.95)', border: 'rgba(255,94,0,0.2)' },
 };
 
 export default function BodyPage() {
@@ -115,14 +115,14 @@ export default function BodyPage() {
         <div className="grid grid-cols-2 gap-3">
           <div className="stat-card">
             <p className="text-xs font-medium uppercase tracking-wider" style={{ color: 'rgba(148,163,184,0.5)' }}>Current Weight</p>
-            <p className="text-2xl font-bold mt-1" style={{ color: '#fbbf24' }}>
+            <p className="text-2xl font-bold mt-1" style={{ color: '#FF5E00' }}>
               {latestMetrics.weightKg}
               <span className="text-sm ml-1" style={{ color: 'rgba(148,163,184,0.4)' }}>kg</span>
             </p>
           </div>
           <div className="stat-card">
             <p className="text-xs font-medium uppercase tracking-wider" style={{ color: 'rgba(148,163,184,0.5)' }}>Height</p>
-            <p className="text-2xl font-bold mt-1" style={{ color: '#fbbf24' }}>
+            <p className="text-2xl font-bold mt-1" style={{ color: '#FF5E00' }}>
               {latestMetrics.heightCm}
               <span className="text-sm ml-1" style={{ color: 'rgba(148,163,184,0.4)' }}>cm</span>
             </p>
@@ -194,7 +194,7 @@ export default function BodyPage() {
                     <Line type="monotone" dataKey="keneniWeight" stroke={USER_COLORS.keneni.primary} strokeWidth={2} dot={{ fill: USER_COLORS.keneni.primary, r: 4 }} name="Keneni" connectNulls />
                   </>
                 ) : (
-                  <Line type="monotone" dataKey="weight" stroke="#fbbf24" strokeWidth={2.5} dot={{ fill: '#fbbf24', r: 4 }} activeDot={{ r: 6 }} name="Weight (kg)" />
+                  <Line type="monotone" dataKey="weight" stroke="#FF5E00" strokeWidth={2.5} dot={{ fill: '#FF5E00', r: 4 }} activeDot={{ r: 6 }} name="Weight (kg)" />
                 )}
               </LineChart>
             </ResponsiveContainer>

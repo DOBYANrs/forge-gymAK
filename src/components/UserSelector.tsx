@@ -32,14 +32,14 @@ export default function UserSelector({ onSelect }: UserSelectorProps) {
       <div
         className="fixed inset-0 pointer-events-none"
         style={{
-          background: 'radial-gradient(circle at 50% 40%, rgba(251,191,36,0.08), transparent 60%)',
+          background: 'radial-gradient(circle at 50% 40%, rgba(255,94,0,0.08), transparent 60%)',
         }}
       />
 
       <div className="relative z-10 w-full max-w-sm text-center animate-scaleIn">
         {/* Logo */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold tracking-tight" style={{ color: '#fbbf24' }}>
+          <h1 className="text-4xl font-bold tracking-tight" style={{ color: '#FF5E00' }}>
             FORGE
           </h1>
           <p className="text-sm mt-2" style={{ color: 'rgba(148,163,184,0.6)' }}>
@@ -48,7 +48,7 @@ export default function UserSelector({ onSelect }: UserSelectorProps) {
         </div>
 
         {/* Decorative line */}
-        <div className="w-16 h-0.5 mx-auto mb-8 rounded-full" style={{ background: 'linear-gradient(90deg, transparent, #fbbf24, transparent)' }} />
+        <div className="w-16 h-0.5 mx-auto mb-8 rounded-full" style={{ background: 'linear-gradient(90deg, transparent, #FF5E00, transparent)' }} />
 
         <p className="text-lg font-semibold mb-8" style={{ color: '#e2e8f0' }}>
           Who's training today?

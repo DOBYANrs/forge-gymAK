@@ -21,7 +21,7 @@ interface WorkoutCardProps {
 export default function WorkoutCard({ exercise, exerciseIndex, dateKey, previousExercise, onDelete, onMoveUp, onMoveDown, isFirst, isLast }: WorkoutCardProps) {
   const { activeUser } = useUser();
   const colors = USER_COLORS[activeUser];
-  const { updateSet, addSet, removeSet } = useWorkout();
+  const { updateSet, addSet, removeSet, toggleSetComplete } = useWorkout();
   const { startTimer } = useTimer();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -43,6 +43,10 @@ export default function WorkoutCard({ exercise, exerciseIndex, dateKey, previous
     updateSet(activeUser, dateKey, exerciseIndex, setIndex, weightKg, reps);
   };
 
+  const handleToggleComplete = (setIndex: number) => {
+    toggleSetComplete(activeUser, dateKey, exerciseIndex, setIndex);
+  };
+
   const handleAddSet = () => {
     addSet(activeUser, dateKey, exerciseIndex);
   };
@@ -62,7 +66,7 @@ export default function WorkoutCard({ exercise, exerciseIndex, dateKey, previous
           <h3 className="font-semibold text-sm" style={{ color: '#f1f5f9' }}>{exercise.exerciseName}</h3>
           {exercise.pattern !== 'normal' && (
             <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium"
-              style={{ background: 'rgba(251,191,36,0.1)', color: '#fbbf24' }}
+              style={{ background: 'rgba(255,94,0,0.1)', color: '#FF5E00' }}
             >
               {exercise.pattern.replace('_', ' ')}
             </span>
@@ -74,7 +78,7 @@ export default function WorkoutCard({ exercise, exerciseIndex, dateKey, previous
               onClick={(e) => { e.stopPropagation(); onMoveUp(); }}
               className="p-1.5 rounded-lg active:scale-90"
               style={{ color: 'rgba(148,163,184,0.4)', transition: 'all 0.3s cubic-bezier(0.22,1,0.36,1)' }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(251,191,36,0.1)'; e.currentTarget.style.color = '#fbbf24'; }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,94,0,0.1)'; e.currentTarget.style.color = '#FF5E00'; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(148,163,184,0.4)'; }}
               title="Move up"
             >
@@ -88,7 +92,7 @@ export default function WorkoutCard({ exercise, exerciseIndex, dateKey, previous
               onClick={(e) => { e.stopPropagation(); onMoveDown(); }}
               className="p-1.5 rounded-lg active:scale-90"
               style={{ color: 'rgba(148,163,184,0.4)', transition: 'all 0.3s cubic-bezier(0.22,1,0.36,1)' }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(251,191,36,0.1)'; e.currentTarget.style.color = '#fbbf24'; }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,94,0,0.1)'; e.currentTarget.style.color = '#FF5E00'; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(148,163,184,0.4)'; }}
               title="Move down"
             >
@@ -101,7 +105,7 @@ export default function WorkoutCard({ exercise, exerciseIndex, dateKey, previous
             onClick={(e) => { e.stopPropagation(); startTimer(2); }}
             className="p-1.5 rounded-lg active:scale-90"
             style={{ color: 'rgba(148,163,184,0.4)', transition: 'all 0.3s cubic-bezier(0.22,1,0.36,1)' }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(251,191,36,0.1)'; e.currentTarget.style.color = '#fbbf24'; }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,94,0,0.1)'; e.currentTarget.style.color = '#FF5E00'; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(148,163,184,0.4)'; }}
             title="Start rest timer"
           >
@@ -122,7 +126,7 @@ export default function WorkoutCard({ exercise, exerciseIndex, dateKey, previous
             </button>
           )}
           {totalVolume > 0 && (
-            <span className="text-xs font-medium" style={{ color: '#fbbf24' }}>
+            <span className="text-xs font-medium" style={{ color: '#FF5E00' }}>
               {totalVolume} kg
             </span>
           )}
@@ -157,6 +161,7 @@ export default function WorkoutCard({ exercise, exerciseIndex, dateKey, previous
                 setData={set}
                 previousSet={previousExercise?.sets[i]}
                 onUpdate={(kg, reps) => handleUpdateSet(i, kg, reps)}
+                onToggleComplete={() => handleToggleComplete(i)}
                 onRemove={() => handleRemoveSet(i)}
                 canRemove={exercise.sets.length > 1}
               />
@@ -169,12 +174,12 @@ export default function WorkoutCard({ exercise, exerciseIndex, dateKey, previous
               onClick={handleAddSet}
               className="w-full mt-2 py-2 rounded-xl border-2 border-dashed text-sm font-medium ripple-container active:scale-[0.98]"
               style={{
-                borderColor: 'rgba(251,191,36,0.12)',
-                color: 'rgba(251,191,36,0.6)',
+                borderColor: 'rgba(255,94,0,0.12)',
+                color: 'rgba(255,94,0,0.6)',
                 transition: 'all 0.3s cubic-bezier(0.22,1,0.36,1)',
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(251,191,36,0.3)'; e.currentTarget.style.background = 'rgba(251,191,36,0.05)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(251,191,36,0.12)'; e.currentTarget.style.background = 'transparent'; }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(255,94,0,0.3)'; e.currentTarget.style.background = 'rgba(255,94,0,0.05)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,94,0,0.12)'; e.currentTarget.style.background = 'transparent'; }}
             >
               + Add Set
             </button>

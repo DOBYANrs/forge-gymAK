@@ -6,6 +6,7 @@ import { getDaySchedule } from '../data/schedule';
 import { formatDateKey, getLastWeekDateKey } from '../utils/dates';
 import WorkoutCard from '../components/today/WorkoutCard';
 import AddExerciseModal from '../components/today/AddExerciseModal';
+import RestTimerBar from '../components/today/RestTimerBar';
 import { useScrollReveal } from '../hooks/useScrollReveal';
 
 const DAY_NAMES = [
@@ -148,7 +149,7 @@ export default function TodayPage() {
             <button
               onClick={() => setSelectedDateKey(todayKey)}
               className="text-[10px] font-semibold px-2 py-0.5 rounded-full transition-all duration-200"
-              style={{ color: '#fbbf24', background: 'rgba(251,191,36,0.1)' }}
+              style={{ color: '#FF5E00', background: 'rgba(255,94,0,0.1)' }}
             >
               ← Back to Today
             </button>
@@ -168,22 +169,22 @@ export default function TodayPage() {
                 style={{
                   background: isSelected
                     ? day.isToday
-                      ? 'linear-gradient(135deg, rgba(251,191,36,0.2), rgba(245,158,11,0.12))'
+                      ? 'linear-gradient(135deg, rgba(255,94,0,0.2), rgba(255,120,40,0.12))'
                       : 'rgba(255,255,255,0.08)'
                     : 'transparent',
                   border: isSelected
                     ? day.isToday
-                      ? '1px solid rgba(251,191,36,0.35)'
+                      ? '1px solid rgba(255,94,0,0.35)'
                       : '1px solid rgba(255,255,255,0.1)'
                     : '1px solid transparent',
-                  boxShadow: isSelected && day.isToday ? '0 2px 12px rgba(251,191,36,0.15)' : 'none',
+                  boxShadow: isSelected && day.isToday ? '0 2px 12px rgba(255,94,0,0.15)' : 'none',
                 }}
               >
                 <span
                   className="text-[9px] font-semibold uppercase tracking-wider mb-0.5"
                   style={{
                     color: isSelected
-                      ? day.isToday ? '#fbbf24' : 'rgba(203,213,225,0.9)'
+                      ? day.isToday ? '#FF5E00' : 'rgba(203,213,225,0.9)'
                       : day.isPast ? 'rgba(148,163,184,0.35)' : 'rgba(148,163,184,0.6)',
                   }}
                 >
@@ -193,7 +194,7 @@ export default function TodayPage() {
                   className="text-sm font-bold leading-none"
                   style={{
                     color: isSelected
-                      ? day.isToday ? '#fbbf24' : '#f1f5f9'
+                      ? day.isToday ? '#FF5E00' : '#f1f5f9'
                       : day.isPast ? 'rgba(148,163,184,0.35)' : 'rgba(203,213,225,0.7)',
                   }}
                 >
@@ -204,10 +205,10 @@ export default function TodayPage() {
                   <span className="w-1.5 h-1.5 rounded-full mt-1" style={{ background: '#22c55e' }} />
                 )}
                 {!isCompletedDay && hasWorkout && (
-                  <span className="w-1.5 h-1.5 rounded-full mt-1" style={{ background: 'rgba(251,191,36,0.5)' }} />
+                  <span className="w-1.5 h-1.5 rounded-full mt-1" style={{ background: 'rgba(255,94,0,0.5)' }} />
                 )}
                 {!hasWorkout && day.isToday && (
-                  <span className="w-1.5 h-1.5 rounded-full mt-1" style={{ background: 'rgba(251,191,36,0.3)' }} />
+                  <span className="w-1.5 h-1.5 rounded-full mt-1" style={{ background: 'rgba(255,94,0,0.3)' }} />
                 )}
               </button>
             );
@@ -220,7 +221,7 @@ export default function TodayPage() {
         className="rounded-2xl p-6 text-center overflow-hidden relative aurora-bg animate-scaleIn"
         style={{
           background: 'linear-gradient(160deg, rgba(28,28,52,0.98) 0%, rgba(18,18,38,0.95) 50%, rgba(28,28,52,0.98) 100%)',
-          border: '1px solid rgba(251,191,36,0.12)',
+          border: '1px solid rgba(255,94,0,0.12)',
           boxShadow: '0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.04)',
         }}
       >
@@ -228,7 +229,7 @@ export default function TodayPage() {
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
-            background: 'radial-gradient(circle at 25% 30%, rgba(251,191,36,0.06), transparent 50%)',
+            background: 'radial-gradient(circle at 25% 30%, rgba(255,94,0,0.06), transparent 50%)',
           }}
         />
         <div
@@ -237,7 +238,7 @@ export default function TodayPage() {
             background: 'radial-gradient(circle at 75% 70%, rgba(59,130,246,0.04), transparent 50%)',
           }}
         />
-        <p className="text-[10px] font-semibold uppercase tracking-[0.25em] mb-2 relative z-10" style={{ color: 'rgba(251,191,36,0.65)' }}>
+        <p className="text-[10px] font-semibold uppercase tracking-[0.25em] mb-2 relative z-10" style={{ color: 'rgba(255,94,0,0.65)' }}>
           {dayName}{!isToday ? ' (Make-up)' : ''}
         </p>
         <h2 className="text-xl font-bold mb-1 relative z-10" style={{ color: '#f1f5f9', letterSpacing: '-0.03em' }}>
@@ -248,7 +249,7 @@ export default function TodayPage() {
           {!schedule.isRestDay && ` · ${schedule.muscleGroups.join(' · ')}`}
         </p>
         {schedule.focus && !schedule.isRestDay && (
-          <p className="text-xs mt-1.5 relative z-10" style={{ color: 'rgba(251,191,36,0.45)' }}>
+          <p className="text-xs mt-1.5 relative z-10" style={{ color: 'rgba(255,94,0,0.45)' }}>
             {schedule.focus}
           </p>
         )}
@@ -304,19 +305,19 @@ export default function TodayPage() {
           ref={tomorrowRef}
           className="reveal-on-scroll reveal-left rounded-2xl p-5"
           style={{
-            background: 'linear-gradient(160deg, rgba(251,191,36,0.06), rgba(245,158,11,0.03))',
-            border: '1px solid rgba(251,191,36,0.18)',
-            boxShadow: '0 4px 24px rgba(251,191,36,0.06)',
+            background: 'linear-gradient(160deg, rgba(255,94,0,0.06), rgba(255,120,40,0.03))',
+            border: '1px solid rgba(255,94,0,0.18)',
+            boxShadow: '0 4px 24px rgba(255,94,0,0.06)',
           }}
         >
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <span className="text-lg">📋</span>
-              <h3 className="font-semibold" style={{ color: '#fbbf24' }}>
+              <h3 className="font-semibold" style={{ color: '#FF5E00' }}>
                 Coming Up
               </h3>
             </div>
-            <span className="text-sm font-medium" style={{ color: 'rgba(251,191,36,0.7)' }}>
+            <span className="text-sm font-medium" style={{ color: 'rgba(255,94,0,0.7)' }}>
               {tomorrowName}
             </span>
           </div>
@@ -398,11 +399,11 @@ export default function TodayPage() {
             onClick={() => setShowAddModal(true)}
             className="flex-1 py-3 rounded-xl border-2 border-dashed text-sm font-medium transition-all duration-200 active:scale-[0.98]"
             style={{
-              borderColor: 'rgba(251,191,36,0.15)',
-              color: 'rgba(251,191,36,0.7)',
+              borderColor: 'rgba(255,94,0,0.15)',
+              color: 'rgba(255,94,0,0.7)',
             }}
-            onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(251,191,36,0.3)'; e.currentTarget.style.background = 'rgba(251,191,36,0.05)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(251,191,36,0.15)'; e.currentTarget.style.background = 'transparent'; }}
+            onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(255,94,0,0.3)'; e.currentTarget.style.background = 'rgba(255,94,0,0.05)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,94,0,0.15)'; e.currentTarget.style.background = 'transparent'; }}
           >
             + Custom Exercise
           </button>
@@ -473,18 +474,18 @@ export default function TodayPage() {
           ref={comingUpRef}
           className="reveal-on-scroll reveal-right rounded-2xl p-4 animate-borderGlow"
           style={{
-            background: 'linear-gradient(160deg, rgba(251,191,36,0.05), rgba(245,158,11,0.02))',
-            border: '1px solid rgba(251,191,36,0.12)',
+            background: 'linear-gradient(160deg, rgba(255,94,0,0.05), rgba(255,120,40,0.02))',
+            border: '1px solid rgba(255,94,0,0.12)',
           }}
         >
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <span className="text-sm">📋</span>
-              <h3 className="text-sm font-semibold" style={{ color: '#fbbf24' }}>
+              <h3 className="text-sm font-semibold" style={{ color: '#FF5E00' }}>
                 {tomorrowSchedule.isRestDay ? 'Tomorrow is Rest Day' : 'Coming Up Tomorrow'}
               </h3>
             </div>
-            <span className="text-xs font-medium" style={{ color: 'rgba(251,191,36,0.6)' }}>
+            <span className="text-xs font-medium" style={{ color: 'rgba(255,94,0,0.6)' }}>
               {tomorrowName}
             </span>
           </div>
@@ -522,7 +523,7 @@ export default function TodayPage() {
                 ))}
               </div>
 
-              <div className="mt-3 pt-2" style={{ borderTop: '1px solid rgba(251,191,36,0.08)' }}>
+              <div className="mt-3 pt-2" style={{ borderTop: '1px solid rgba(255,94,0,0.08)' }}>
                 <p className="text-[10px] text-center" style={{ color: 'rgba(148,163,184,0.4)' }}>
                   Get ready — tomorrow's workout is waiting
                 </p>
@@ -543,6 +544,9 @@ export default function TodayPage() {
         onClose={() => setShowAddModal(false)}
         dateKey={dateKey}
       />
+
+      {/* Sticky rest timer bar */}
+      <RestTimerBar />
     </div>
   );
 }

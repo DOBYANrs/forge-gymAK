@@ -38,13 +38,13 @@ export default function Header() {
       className="sticky top-0 z-40 border-b backdrop-blur-xl"
       style={{
         background: 'linear-gradient(135deg, rgba(15,15,26,0.92), rgba(22,22,40,0.85))',
-        borderColor: 'rgba(251,191,36,0.1)',
+        borderColor: 'rgba(255,94,0,0.1)',
       }}
     >
       <div className="max-w-lg mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <h1 className="text-xl font-bold" style={{ color: '#fbbf24' }}>FORGE</h1>
+            <h1 className="text-xl font-bold" style={{ color: '#FF5E00' }}>FORGE</h1>
             <span className="text-sm hidden xs:inline" style={{ color: 'rgba(148,163,184,0.7)' }}>
               Abel & Keneni
             </span>
@@ -54,8 +54,8 @@ export default function Header() {
               onClick={() => setShowBackupMenu(!showBackupMenu)}
               className="w-9 h-9 rounded-lg flex items-center justify-center text-lg transition-all duration-200 active:scale-90"
               style={{
-                background: showBackupMenu ? 'rgba(251,191,36,0.1)' : 'transparent',
-                color: showBackupMenu ? '#fbbf24' : 'rgba(148,163,184,0.6)',
+                background: showBackupMenu ? 'rgba(255,94,0,0.1)' : 'transparent',
+                color: showBackupMenu ? '#FF5E00' : 'rgba(148,163,184,0.6)',
               }}
               title="Backup / Restore data"
             >
@@ -67,7 +67,7 @@ export default function Header() {
                   className="absolute top-full right-0 mt-1 rounded-xl shadow-lg py-1 min-w-[160px] z-50"
                   style={{
                     background: 'rgba(22,22,40,0.95)',
-                    border: '1px solid rgba(251,191,36,0.15)',
+                    border: '1px solid rgba(255,94,0,0.15)',
                     backdropFilter: 'blur(12px)',
                   }}
                 >
@@ -75,7 +75,7 @@ export default function Header() {
                     onClick={handleExport}
                     className="w-full px-4 py-2 text-sm text-left flex items-center gap-2 transition-all"
                     style={{ color: 'rgba(203,213,225,0.8)' }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(251,191,36,0.08)'}
+                    onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,94,0,0.08)'}
                     onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                   >
                     📤 Export data
@@ -84,7 +84,7 @@ export default function Header() {
                     onClick={handleImportClick}
                     className="w-full px-4 py-2 text-sm text-left flex items-center gap-2 transition-all"
                     style={{ color: 'rgba(203,213,225,0.8)' }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(251,191,36,0.08)'}
+                    onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,94,0,0.08)'}
                     onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                   >
                     📥 Import data

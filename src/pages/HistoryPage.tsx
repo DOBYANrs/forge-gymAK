@@ -85,7 +85,7 @@ export default function HistoryPage() {
   const totalWorkouts = historyEntries.length;
   const totalVolume = historyEntries.reduce((sum, e) => sum + e.totalVolume, 0);
 
-  const chartColors = { grid: 'rgba(255,255,255,0.05)', text: 'rgba(148,163,184,0.5)', tooltip: { bg: 'rgba(22,22,40,0.95)', border: 'rgba(251,191,36,0.2)' } };
+  const chartColors = { grid: 'rgba(255,255,255,0.05)', text: 'rgba(148,163,184,0.5)', tooltip: { bg: 'rgba(22,22,40,0.95)', border: 'rgba(255,94,0,0.2)' } };
 
   return (
     <div className="space-y-4 page-enter">
@@ -111,14 +111,14 @@ export default function HistoryPage() {
       <div className="grid grid-cols-2 gap-3">
         <div className="stat-card">
           <p className="text-xs font-medium uppercase tracking-wider" style={{ color: 'rgba(148,163,184,0.5)' }}>Workouts</p>
-          <p className="text-2xl font-bold mt-1" style={{ color: '#fbbf24' }}>
+          <p className="text-2xl font-bold mt-1" style={{ color: '#FF5E00' }}>
             {totalWorkouts}
           </p>
           <p className="text-[10px] mt-1" style={{ color: 'rgba(148,163,184,0.4)' }}>Last 30 days</p>
         </div>
         <div className="stat-card">
           <p className="text-xs font-medium uppercase tracking-wider" style={{ color: 'rgba(148,163,184,0.5)' }}>Total Volume</p>
-          <p className="text-2xl font-bold mt-1" style={{ color: '#fbbf24' }}>
+          <p className="text-2xl font-bold mt-1" style={{ color: '#FF5E00' }}>
             {totalVolume.toLocaleString()}
             <span className="text-sm ml-1" style={{ color: 'rgba(148,163,184,0.4)' }}>kg</span>
           </p>
@@ -162,7 +162,7 @@ export default function HistoryPage() {
                 <div className="flex items-center gap-4">
                   <div className="text-right">
                     <span className="text-xs" style={{ color: 'rgba(148,163,184,0.5)' }}>Weight </span>
-                    <span className="text-sm font-semibold" style={{ color: '#fbbf24' }}>{latest.weightKg} kg</span>
+                    <span className="text-sm font-semibold" style={{ color: '#FF5E00' }}>{latest.weightKg} kg</span>
                   </div>
                   <div className="text-right">
                     <span className="text-xs" style={{ color: 'rgba(148,163,184,0.5)' }}>Height </span>
@@ -200,7 +200,7 @@ export default function HistoryPage() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm font-semibold" style={{ color: '#fbbf24' }}>
+                      <p className="text-sm font-semibold" style={{ color: '#FF5E00' }}>
                         {entry.totalVolume.toLocaleString()} kg
                       </p>
                       <p className="text-xs" style={{ color: 'rgba(148,163,184,0.5)' }}>

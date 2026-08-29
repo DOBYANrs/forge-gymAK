@@ -15,6 +15,7 @@ export interface SetRecord {
   weightKg: number;
   reps: number;
   timestamp: number;
+  completed?: boolean;
 }
 
 export interface ExerciseLog {

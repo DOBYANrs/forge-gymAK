@@ -46,7 +46,7 @@ export default function AddExerciseModal({ isOpen, onClose, dateKey }: AddExerci
         className="w-full max-w-sm rounded-t-2xl sm:rounded-2xl p-6 animate-slideUp mx-auto"
         style={{
           background: 'linear-gradient(135deg, rgba(22,22,40,0.98), rgba(30,30,50,0.95))',
-          border: '1px solid rgba(251,191,36,0.15)',
+          border: '1px solid rgba(255,94,0,0.15)',
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -88,9 +88,9 @@ export default function AddExerciseModal({ isOpen, onClose, dateKey }: AddExerci
                   onClick={() => setPattern(p.value)}
                   className="px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200"
                   style={{
-                    background: pattern === p.value ? 'rgba(251,191,36,0.15)' : 'rgba(255,255,255,0.05)',
-                    color: pattern === p.value ? '#fbbf24' : 'rgba(148,163,184,0.6)',
-                    border: pattern === p.value ? '1px solid rgba(251,191,36,0.3)' : '1px solid transparent',
+                    background: pattern === p.value ? 'rgba(255,94,0,0.15)' : 'rgba(255,255,255,0.05)',
+                    color: pattern === p.value ? '#FF5E00' : 'rgba(148,163,184,0.6)',
+                    border: pattern === p.value ? '1px solid rgba(255,94,0,0.3)' : '1px solid transparent',
                   }}
                 >
                   {p.label}
@@ -101,7 +101,7 @@ export default function AddExerciseModal({ isOpen, onClose, dateKey }: AddExerci
 
           <div>
             <label className="block text-sm font-medium mb-1" style={{ color: 'rgba(148,163,184,0.6)' }}>
-              Sets: <span className="font-bold" style={{ color: '#fbbf24' }}>{numSets}</span>
+              Sets: <span className="font-bold" style={{ color: '#FF5E00' }}>{numSets}</span>
             </label>
             <input
               type="range"
@@ -110,7 +110,7 @@ export default function AddExerciseModal({ isOpen, onClose, dateKey }: AddExerci
               value={numSets}
               onChange={(e) => setNumSets(parseInt(e.target.value))}
               className="w-full"
-              style={{ accentColor: '#fbbf24' }}
+              style={{ accentColor: '#FF5E00' }}
             />
             <div className="flex justify-between text-xs mt-1" style={{ color: 'rgba(148,163,184,0.4)' }}>
               <span>1</span>

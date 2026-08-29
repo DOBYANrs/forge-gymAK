@@ -30,6 +30,7 @@ interface WorkoutContextType {
   deleteExerciseFromDay: (userId: UserId, dateKey: string, exerciseIndex: number) => void;
   moveExercise: (userId: UserId, dateKey: string, fromIndex: number, toIndex: number) => void;
   toggleCompleted: (userId: UserId, dateKey: string) => void;
+  toggleSetComplete: (userId: UserId, dateKey: string, exerciseIndex: number, setIndex: number) => void;
   importData: (data: WorkoutData) => void;
   exportData: () => WorkoutData;
   clearAllData: () => void;
@@ -386,6 +387,18 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const toggleSetComplete = useCallback((userId: UserId, dateKey: string, exerciseIndex: number, setIndex: number) => {
+    setWorkoutData((prev) => {
+      const newData = structuredClone(prev);
+      const day = newData[userId]?.[dateKey];
+      if (!day?.exercises[exerciseIndex]?.sets[setIndex]) return prev;
+      const set = day.exercises[exerciseIndex].sets[setIndex];
+      set.completed = !set.completed;
+      syncToFirebase(userId, dateKey, day);
+      return newData;
+    });
+  }, [syncToFirebase]);
+
   const importData = useCallback((data: WorkoutData) => {
     setWorkoutData(data);
   }, []);
@@ -414,6 +427,7 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
       deleteExerciseFromDay,
       moveExercise,
       toggleCompleted,
+      toggleSetComplete,
       importData,
       exportData,
       clearAllData,

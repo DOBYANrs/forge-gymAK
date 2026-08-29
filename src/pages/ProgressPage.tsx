@@ -19,8 +19,8 @@ const KENENI_COLORS = USER_COLORS.keneni;
 const chartColors = {
   grid: 'rgba(255,255,255,0.05)',
   text: 'rgba(148,163,184,0.5)',
-  tooltip: { bg: 'rgba(22,22,40,0.95)', border: 'rgba(251,191,36,0.2)' },
-  weight: '#fbbf24',
+  tooltip: { bg: 'rgba(22,22,40,0.95)', border: 'rgba(255,94,0,0.2)' },
+  weight: '#FF5E00',
   reps: '#60a5fa',
   volume: '#a78bfa',
 };
@@ -316,7 +316,7 @@ export default function ProgressPage() {
           {/* Per-muscle-group volume over time chart */}
           {selectedMuscleGroup && muscleVolumeOverTime.length >= 2 && (
             <div className="card">
-              <h3 className="text-sm font-semibold mb-3" style={{ color: '#fbbf24' }}>
+              <h3 className="text-sm font-semibold mb-3" style={{ color: '#FF5E00' }}>
                 {selectedMuscleGroup} Volume Over Time
               </h3>
               <ResponsiveContainer width="100%" height={220}>
@@ -325,7 +325,7 @@ export default function ProgressPage() {
                   <XAxis dataKey="display" tick={{ fontSize: 10, fill: chartColors.text }} interval="preserveStartEnd" />
                   <YAxis tick={{ fontSize: 10, fill: chartColors.text }} />
                   <Tooltip contentStyle={{ borderRadius: '12px', border: `1px solid ${chartColors.tooltip.border}`, fontSize: '12px', background: chartColors.tooltip.bg, color: '#e2e8f0' }} formatter={(value) => [`${Number(value).toLocaleString()} kg`, 'Volume']} />
-                  <Line type="monotone" dataKey="volume" stroke="#fbbf24" strokeWidth={2.5} dot={{ fill: '#fbbf24', r: 4 }} activeDot={{ r: 6 }} />
+                  <Line type="monotone" dataKey="volume" stroke="#FF5E00" strokeWidth={2.5} dot={{ fill: '#FF5E00', r: 4 }} activeDot={{ r: 6 }} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -358,7 +358,7 @@ export default function ProgressPage() {
                   <XAxis type="number" tick={{ fontSize: 10, fill: chartColors.text }} />
                   <YAxis dataKey="muscleGroup" type="category" tick={{ fontSize: 11, fill: 'rgba(148,163,184,0.6)' }} width={90} />
                   <Tooltip contentStyle={{ borderRadius: '12px', border: `1px solid ${chartColors.tooltip.border}`, fontSize: '12px', background: chartColors.tooltip.bg, color: '#e2e8f0' }} formatter={(value) => [`${Number(value).toLocaleString()} kg`, 'Volume']} />
-                  <Bar dataKey="volume" fill="#fbbf24" radius={[0, 6, 6, 0]} />
+                  <Bar dataKey="volume" fill="#FF5E00" radius={[0, 6, 6, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -381,7 +381,7 @@ export default function ProgressPage() {
                         <span style={{ color: 'rgba(148,163,184,0.5)' }}>{item.volume.toLocaleString()} kg</span>
                       </div>
                       <div className="w-full h-2.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
-                        <div className="h-full rounded-full transition-all duration-1000 ease-out" style={{ width: `${pct}%`, background: 'linear-gradient(90deg, #fbbf24, #f59e0b)' }} />
+                        <div className="h-full rounded-full transition-all duration-1000 ease-out" style={{ width: `${pct}%`, background: 'linear-gradient(90deg, #FF5E00, #FF7828)' }} />
                       </div>
                     </div>
                   );

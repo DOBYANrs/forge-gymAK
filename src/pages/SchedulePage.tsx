@@ -56,7 +56,7 @@ function AddExerciseForm({ dayOfWeek, onClose }: AddExerciseFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="mt-3 p-3 rounded-xl space-y-3 animate-slideUp"
-      style={{ background: 'linear-gradient(160deg, rgba(28,28,52,0.95), rgba(18,18,38,0.9))', border: '1px solid rgba(251,191,36,0.12)' }}
+      style={{ background: 'linear-gradient(160deg, rgba(28,28,52,0.95), rgba(18,18,38,0.9))', border: '1px solid rgba(255,94,0,0.12)' }}
     >
       <input
         type="text"
@@ -74,9 +74,9 @@ function AddExerciseForm({ dayOfWeek, onClose }: AddExerciseFormProps) {
             onClick={() => setPattern(p.value)}
             className="px-2.5 py-1.5 rounded-lg text-xs font-semibold"
             style={{
-              background: pattern === p.value ? '#fbbf24' : 'rgba(255,255,255,0.06)',
+              background: pattern === p.value ? '#FF5E00' : 'rgba(255,255,255,0.06)',
               color: pattern === p.value ? '#0f0f1a' : '#94a3b8',
-              border: `1px solid ${pattern === p.value ? '#fbbf24' : 'rgba(255,255,255,0.08)'}`,
+              border: `1px solid ${pattern === p.value ? '#FF5E00' : 'rgba(255,255,255,0.08)'}`,
               transition: 'all 0.25s cubic-bezier(0.22,1,0.36,1)',
             }}
           >
@@ -183,7 +183,7 @@ function EditExerciseForm({ dayOfWeek, exerciseIndex, exercise, onClose }: EditE
 
   return (
     <form onSubmit={handleSubmit} className="mt-3 p-3 rounded-xl space-y-3 animate-slideUp"
-      style={{ background: 'linear-gradient(160deg, rgba(28,28,52,0.95), rgba(18,18,38,0.9))', border: '1px solid rgba(251,191,36,0.12)' }}
+      style={{ background: 'linear-gradient(160deg, rgba(28,28,52,0.95), rgba(18,18,38,0.9))', border: '1px solid rgba(255,94,0,0.12)' }}
     >
       <input
         type="text"
@@ -201,9 +201,9 @@ function EditExerciseForm({ dayOfWeek, exerciseIndex, exercise, onClose }: EditE
             onClick={() => setPattern(p.value)}
             className="px-2.5 py-1.5 rounded-lg text-xs font-semibold"
             style={{
-              background: pattern === p.value ? '#fbbf24' : 'rgba(255,255,255,0.06)',
+              background: pattern === p.value ? '#FF5E00' : 'rgba(255,255,255,0.06)',
               color: pattern === p.value ? '#0f0f1a' : '#94a3b8',
-              border: `1px solid ${pattern === p.value ? '#fbbf24' : 'rgba(255,255,255,0.08)'}`,
+              border: `1px solid ${pattern === p.value ? '#FF5E00' : 'rgba(255,255,255,0.08)'}`,
               transition: 'all 0.25s cubic-bezier(0.22,1,0.36,1)',
             }}
           >
@@ -312,7 +312,7 @@ export default function SchedulePage() {
                   style={{
                     background: day.isRestDay
                       ? 'rgba(255,255,255,0.04)'
-                      : 'linear-gradient(135deg, rgba(251,191,36,0.08), rgba(255,255,255,0.04))',
+                      : 'linear-gradient(135deg, rgba(255,94,0,0.08), rgba(255,255,255,0.04))',
                     transition: 'all 0.3s cubic-bezier(0.22,1,0.36,1)',
                   }}
                 >
@@ -339,7 +339,7 @@ export default function SchedulePage() {
             {isExpanded && (
               <div className="mt-3 pt-3 animate-fadeIn" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
                 {day.focus && (
-                  <p className="text-[10px] mb-2 px-1" style={{ color: 'rgba(251,191,36,0.5)' }}>
+                  <p className="text-[10px] mb-2 px-1" style={{ color: 'rgba(255,94,0,0.5)' }}>
                     Focus: {day.focus}
                   </p>
                 )}
@@ -357,10 +357,10 @@ export default function SchedulePage() {
                         className="flex items-center justify-between py-2 px-3 rounded-xl group"
                         style={{
                           background: editingExercise?.day === day.dayOfWeek && editingExercise?.index === i
-                            ? 'rgba(251,191,36,0.06)'
+                            ? 'rgba(255,94,0,0.06)'
                             : 'transparent',
                           border: editingExercise?.day === day.dayOfWeek && editingExercise?.index === i
-                            ? '1px solid rgba(251,191,36,0.15)'
+                            ? '1px solid rgba(255,94,0,0.15)'
                             : '1px solid transparent',
                           transition: 'all 0.3s cubic-bezier(0.22,1,0.36,1)',
                         }}
@@ -374,11 +374,11 @@ export default function SchedulePage() {
                         }}
                       >
                         <div className="flex items-center gap-2 flex-wrap min-w-0">
-                          <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: '#fbbf24' }} />
+                          <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: '#FF5E00' }} />
                           <span className="text-sm font-medium" style={{ color: 'rgba(203,213,225,0.9)' }}>{ex.name}</span>
                           {ex.pattern !== 'normal' && (
                             <span className="text-[9px] px-1.5 py-0.5 rounded-full font-medium"
-                              style={{ background: 'rgba(251,191,36,0.1)', color: '#fbbf24' }}
+                              style={{ background: 'rgba(255,94,0,0.1)', color: '#FF5E00' }}
                             >
                               {ex.pattern.replace('_', ' ')}
                             </span>
@@ -404,8 +404,8 @@ export default function SchedulePage() {
                           <button
                             onClick={() => setEditingExercise({ day: day.dayOfWeek, index: i })}
                             className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 active:scale-90"
-                            style={{ color: 'rgba(251,191,36,0.5)', transition: 'all 0.3s cubic-bezier(0.22,1,0.36,1)' }}
-                            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(251,191,36,0.1)'}
+                            style={{ color: 'rgba(255,94,0,0.5)', transition: 'all 0.3s cubic-bezier(0.22,1,0.36,1)' }}
+                            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,94,0,0.1)'}
                             onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                             title="Edit exercise"
                           >
@@ -448,9 +448,9 @@ export default function SchedulePage() {
                     <button
                       onClick={() => { setAddingToDay(day.dayOfWeek); setEditingExercise(null); }}
                       className="flex-1 py-2.5 rounded-xl border-2 border-dashed text-sm font-medium active:scale-[0.98]"
-                      style={{ borderColor: 'rgba(251,191,36,0.15)', color: 'rgba(251,191,36,0.7)', transition: 'all 0.3s cubic-bezier(0.22,1,0.36,1)' }}
-                      onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(251,191,36,0.3)'; e.currentTarget.style.background = 'rgba(251,191,36,0.05)'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(251,191,36,0.15)'; e.currentTarget.style.background = 'transparent'; }}
+                      style={{ borderColor: 'rgba(255,94,0,0.15)', color: 'rgba(255,94,0,0.7)', transition: 'all 0.3s cubic-bezier(0.22,1,0.36,1)' }}
+                      onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(255,94,0,0.3)'; e.currentTarget.style.background = 'rgba(255,94,0,0.05)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,94,0,0.15)'; e.currentTarget.style.background = 'transparent'; }}
                     >
                       + Add Exercise
                     </button>
