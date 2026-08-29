@@ -39,12 +39,16 @@ export interface PresetExercise {
   name: string;
   pattern: ExercisePattern;
   defaultSets: number;
+  targetReps?: string;
+  restSeconds?: number;
+  notes?: string;
 }
 
 export interface DaySchedule {
   dayOfWeek: DayOfWeek;
   label: string;
   muscleGroups: string[];
+  focus?: string;
   exercises: PresetExercise[];
   isRestDay: boolean;
 }

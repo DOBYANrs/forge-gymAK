@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { useUser } from '../../context/UserContext';
 import { useWorkout } from '../../context/WorkoutContext';
 import { useTimer } from '../../context/TimerContext';
@@ -24,8 +24,20 @@ export default function WorkoutCard({ exercise, exerciseIndex, dateKey, previous
   const { updateSet, addSet, removeSet } = useWorkout();
   const { startTimer } = useTimer();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
 
   const totalVolume = exercise.sets.reduce((sum, s) => sum + s.weightKg * s.reps, 0);
+
+  // Spotlight tracking (Aceternity-style)
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const card = cardRef.current;
+    if (!card) return;
+    const rect = card.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    card.style.setProperty('--mouse-x', `${x}%`);
+    card.style.setProperty('--mouse-y', `${y}%`);
+  }, []);
 
   const handleUpdateSet = (setIndex: number, weightKg: number, reps: number) => {
     updateSet(activeUser, dateKey, exerciseIndex, setIndex, weightKg, reps);
@@ -40,7 +52,7 @@ export default function WorkoutCard({ exercise, exerciseIndex, dateKey, previous
   };
 
   return (
-    <div className="card mb-3 overflow-hidden animate-slideUp" style={{ borderLeft: `3px solid ${colors.primary}` }}>
+    <div ref={cardRef} onMouseMove={handleMouseMove} className="card mb-3 overflow-hidden animate-slideUp" style={{ borderLeft: `3px solid ${colors.primary}` }}>
       {/* Header */}
       <button
         onClick={() => setIsCollapsed(!isCollapsed)}
@@ -60,8 +72,8 @@ export default function WorkoutCard({ exercise, exerciseIndex, dateKey, previous
           {onMoveUp && !isFirst && (
             <button
               onClick={(e) => { e.stopPropagation(); onMoveUp(); }}
-              className="p-1.5 rounded-lg transition-all duration-200 active:scale-90"
-              style={{ color: 'rgba(148,163,184,0.4)' }}
+              className="p-1.5 rounded-lg active:scale-90"
+              style={{ color: 'rgba(148,163,184,0.4)', transition: 'all 0.3s cubic-bezier(0.22,1,0.36,1)' }}
               onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(251,191,36,0.1)'; e.currentTarget.style.color = '#fbbf24'; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(148,163,184,0.4)'; }}
               title="Move up"
@@ -74,8 +86,8 @@ export default function WorkoutCard({ exercise, exerciseIndex, dateKey, previous
           {onMoveDown && !isLast && (
             <button
               onClick={(e) => { e.stopPropagation(); onMoveDown(); }}
-              className="p-1.5 rounded-lg transition-all duration-200 active:scale-90"
-              style={{ color: 'rgba(148,163,184,0.4)' }}
+              className="p-1.5 rounded-lg active:scale-90"
+              style={{ color: 'rgba(148,163,184,0.4)', transition: 'all 0.3s cubic-bezier(0.22,1,0.36,1)' }}
               onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(251,191,36,0.1)'; e.currentTarget.style.color = '#fbbf24'; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(148,163,184,0.4)'; }}
               title="Move down"
@@ -87,8 +99,8 @@ export default function WorkoutCard({ exercise, exerciseIndex, dateKey, previous
           )}
           <button
             onClick={(e) => { e.stopPropagation(); startTimer(2); }}
-            className="p-1.5 rounded-lg transition-all duration-200 active:scale-90"
-            style={{ color: 'rgba(148,163,184,0.4)' }}
+            className="p-1.5 rounded-lg active:scale-90"
+            style={{ color: 'rgba(148,163,184,0.4)', transition: 'all 0.3s cubic-bezier(0.22,1,0.36,1)' }}
             onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(251,191,36,0.1)'; e.currentTarget.style.color = '#fbbf24'; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(148,163,184,0.4)'; }}
             title="Start rest timer"
@@ -98,8 +110,8 @@ export default function WorkoutCard({ exercise, exerciseIndex, dateKey, previous
           {onDelete && (
             <button
               onClick={(e) => { e.stopPropagation(); if (window.confirm('Delete this exercise?')) onDelete(); }}
-              className="p-1.5 rounded-lg transition-all duration-200 active:scale-90"
-              style={{ color: 'rgba(239,68,68,0.4)' }}
+              className="p-1.5 rounded-lg active:scale-90"
+              style={{ color: 'rgba(239,68,68,0.4)', transition: 'all 0.3s cubic-bezier(0.22,1,0.36,1)' }}
               onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; e.currentTarget.style.color = '#ef4444'; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(239,68,68,0.4)'; }}
               title="Delete exercise"
@@ -155,10 +167,11 @@ export default function WorkoutCard({ exercise, exerciseIndex, dateKey, previous
           {exercise.sets.length < 10 && (
             <button
               onClick={handleAddSet}
-              className="w-full mt-2 py-2 rounded-xl border-2 border-dashed text-sm font-medium transition-all duration-200 active:scale-[0.98]"
+              className="w-full mt-2 py-2 rounded-xl border-2 border-dashed text-sm font-medium ripple-container active:scale-[0.98]"
               style={{
                 borderColor: 'rgba(251,191,36,0.12)',
                 color: 'rgba(251,191,36,0.6)',
+                transition: 'all 0.3s cubic-bezier(0.22,1,0.36,1)',
               }}
               onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(251,191,36,0.3)'; e.currentTarget.style.background = 'rgba(251,191,36,0.05)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(251,191,36,0.12)'; e.currentTarget.style.background = 'transparent'; }}

@@ -18,26 +18,57 @@ interface ScheduleContextType {
 }
 
 const SCHEDULE_STORAGE_KEY = 'forge_gym_custom_schedule';
+const SCHEDULE_VERSION_KEY = 'forge_gym_schedule_version';
+// Bump this whenever WEEKLY_SCHEDULE changes to force-clear old custom data
+const CURRENT_SCHEDULE_VERSION = '3.0';
+
+const EMPTY_SCHEDULE: Record<DayOfWeek, PresetExercise[]> = {
+  sunday: [],
+  monday: [],
+  tuesday: [],
+  wednesday: [],
+  thursday: [],
+  friday: [],
+  saturday: [],
+};
 
 function loadFromStorage(): Record<DayOfWeek, PresetExercise[]> {
   try {
+    const storedVersion = localStorage.getItem(SCHEDULE_VERSION_KEY);
+    if (storedVersion !== CURRENT_SCHEDULE_VERSION) {
+      // New schedule version — wipe ALL old custom data
+      localStorage.removeItem(SCHEDULE_STORAGE_KEY);
+      localStorage.removeItem('forge_gym_workout_data');
+      localStorage.removeItem('forge_gym_deleted_exercises');
+      localStorage.setItem(SCHEDULE_VERSION_KEY, CURRENT_SCHEDULE_VERSION);
+      return { ...EMPTY_SCHEDULE };
+    }
     const raw = localStorage.getItem(SCHEDULE_STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const data = JSON.parse(raw);
+      // Merge with empty schedule to ensure all days exist, but only keep non-empty customizations
+      const result = { ...EMPTY_SCHEDULE };
+      for (const [key, val] of Object.entries(data)) {
+        if (Array.isArray(val) && val.length > 0) {
+          result[key as DayOfWeek] = val;
+        }
+      }
+      return result;
+    }
   } catch {}
-  return {
-    sunday: [],
-    monday: [],
-    tuesday: [],
-    wednesday: [],
-    thursday: [],
-    friday: [],
-    saturday: [],
-  };
+  return { ...EMPTY_SCHEDULE };
 }
 
 function saveToStorage(data: Record<DayOfWeek, PresetExercise[]>) {
   try {
-    localStorage.setItem(SCHEDULE_STORAGE_KEY, JSON.stringify(data));
+    // Only save non-empty customizations
+    const toSave: Record<string, PresetExercise[]> = {};
+    for (const [key, val] of Object.entries(data)) {
+      if (val.length > 0) {
+        toSave[key] = val;
+      }
+    }
+    localStorage.setItem(SCHEDULE_STORAGE_KEY, JSON.stringify(toSave));
   } catch {}
 }
 
@@ -100,6 +131,9 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
     setFullSchedule((prev) => {
       const updated = { ...prev };
       if (!updated[dayOfWeek]) updated[dayOfWeek] = [];
+      while (updated[dayOfWeek].length <= index) {
+        updated[dayOfWeek].push({ name: '', pattern: 'normal', defaultSets: 3 });
+      }
       updated[dayOfWeek] = updated[dayOfWeek].map((ex, i) => (i === index ? exercise : ex));
       return updated;
     });
@@ -108,6 +142,7 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
   const removeExerciseFromSchedule = useCallback((dayOfWeek: DayOfWeek, index: number) => {
     setFullSchedule((prev) => {
       const updated = { ...prev };
+      if (!updated[dayOfWeek]) updated[dayOfWeek] = [];
       updated[dayOfWeek] = updated[dayOfWeek].filter((_, i) => i !== index);
       return updated;
     });
@@ -121,10 +156,9 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const getScheduleForDay = useCallback((dayOfWeek: DayOfWeek, defaultExercises: PresetExercise[]) => {
-    // If the user has customized this day, use their custom schedule
-    // Otherwise use the default schedule
+    // Only use custom schedule if the user has actually added exercises to it
     const custom = fullSchedule[dayOfWeek];
-    if (custom !== undefined) {
+    if (custom && custom.length > 0) {
       return custom;
     }
     return defaultExercises;
