@@ -127,11 +127,8 @@ export default function TodayPage() {
   const isCompleted = todayWorkout?.completed ?? false;
 
   // Scroll reveal refs
-  const exerciseListRef = useScrollReveal<HTMLDivElement>();
   const tomorrowRef = useScrollReveal<HTMLDivElement>();
   const comingUpRef = useScrollReveal<HTMLDivElement>();
-  const restDayRef = useScrollReveal<HTMLDivElement>();
-  const completedRef = useScrollReveal<HTMLDivElement>();
 
   return (
     <div className="space-y-4 page-enter">
@@ -260,8 +257,7 @@ export default function TodayPage() {
       {/* Rest day notice — shown when it's a rest day AND no custom exercises were added */}
       {schedule.isRestDay && exercises.length === 0 && !isCompleted && (
         <div
-          ref={restDayRef}
-          className="reveal-on-scroll rounded-2xl p-6 text-center"
+          className="rounded-2xl p-6 text-center animate-scaleIn"
           style={{
             background: 'linear-gradient(160deg, rgba(28,28,52,0.9), rgba(18,18,38,0.7))',
             border: '1px solid rgba(255,255,255,0.06)',
@@ -278,8 +274,7 @@ export default function TodayPage() {
       {/* Workout completed message */}
       {isCompleted && (
         <div
-          ref={completedRef}
-          className="reveal-on-scroll reveal-scale rounded-2xl p-8 text-center celebration-burst"
+          className="rounded-2xl p-8 text-center celebration-burst animate-scaleIn"
           style={{
             background: 'linear-gradient(160deg, rgba(34,197,94,0.08), rgba(22,163,74,0.04))',
             border: '1px solid rgba(34,197,94,0.18)',
@@ -378,7 +373,7 @@ export default function TodayPage() {
 
       {/* Exercise cards — shown on any day (including rest days if you added exercises) */}
       {!isCompleted && exercises.length > 0 && (
-        <div ref={exerciseListRef} className="space-y-3 reveal-on-scroll">
+        <div className="space-y-3 animate-stagger">
           {exercises.map((exercise, i) => (
             <WorkoutCard
               key={`${exercise.exerciseName}-${i}`}
