@@ -11,12 +11,13 @@ const SchedulePage = lazy(() => import('./pages/SchedulePage'));
 const HistoryPage = lazy(() => import('./pages/HistoryPage'));
 const ProgressPage = lazy(() => import('./pages/ProgressPage'));
 const BodyPage = lazy(() => import('./pages/BodyPage'));
+const SocialPage = lazy(() => import('./pages/SocialPage'));
 
 function PageLoader() {
   return (
     <div className="flex items-center justify-center py-20">
       <div className="flex flex-col items-center gap-3">
-        <div className="w-8 h-8 border-3 border-amber-400 border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-3 border-orange-500 border-t-transparent rounded-full animate-spin" />
         <p className="text-sm" style={{ color: 'rgba(148,163,184,0.5)' }}>Loading...</p>
       </div>
     </div>
@@ -62,6 +63,11 @@ function AppContent() {
         <Route path="body" element={
           <Suspense fallback={<PageLoader />}>
             <BodyPage />
+          </Suspense>
+        } />
+        <Route path="social" element={
+          <Suspense fallback={<PageLoader />}>
+            <SocialPage />
           </Suspense>
         } />
       </Route>
