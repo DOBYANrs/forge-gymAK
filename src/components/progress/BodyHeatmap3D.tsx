@@ -65,9 +65,6 @@ function getMuscleForVertex(x: number, y: number, z: number): string | null {
   return null;
 }
 
-// Untrained color
-const UNTRAINED_COLOR = new THREE.Color(0x1e212b);
-const UNTRAINED_EMISSIVE = new THREE.Color(0x0a0b10);
 
 export default function BodyHeatmap3D({ muscleScores, height = 400 }: BodyHeatmap3DProps) {
   const mountRef = useRef<HTMLDivElement>(null);
