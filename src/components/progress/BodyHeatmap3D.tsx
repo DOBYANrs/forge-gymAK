@@ -1,5 +1,6 @@
 import { useRef, useEffect, useMemo, useState } from 'react';
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import type { MuscleScore } from '../../utils/muscleScoring';
 
 interface BodyHeatmap3DProps {
@@ -7,121 +8,62 @@ interface BodyHeatmap3DProps {
   height?: number;
 }
 
-// Create a simplified body mesh with separable muscle groups
-function createBodyMesh(_scene: THREE.Scene, scores: Map<string, MuscleScore>) {
-  const bodyGroup = new THREE.Group();
-
-  // Material for uncharted areas
-  const baseMaterial = new THREE.MeshPhongMaterial({
-    color: 0x1a1a2e,
-    transparent: true,
-    opacity: 0.6,
-    wireframe: false,
-  });
-
-  // Helper to create a muscle zone
-  function createMuscle(
-    geometry: THREE.BufferGeometry,
-    position: [number, number, number],
-    rotation?: [number, number, number],
-    scale?: [number, number, number],
-    muscleName?: string,
-  ) {
-    const score = muscleName ? scores.get(muscleName) : undefined;
-    const color = score ? new THREE.Color(score.tier.color) : new THREE.Color(0x1a1a2e);
-    const emissive = score && score.score > 250
-      ? new THREE.Color(score.tier.color).multiplyScalar(0.2)
-      : new THREE.Color(0x000000);
-
-    const material = new THREE.MeshPhongMaterial({
-      color,
-      emissive,
-      emissiveIntensity: score && score.score >= 1000 ? 0.4 : 0.15,
-      transparent: true,
-      opacity: 0.85,
-      shininess: 60,
-    });
-
-    const mesh = new THREE.Mesh(geometry, material);
-    mesh.position.set(...position);
-    if (rotation) mesh.rotation.set(...rotation);
-    if (scale) mesh.scale.set(...scale);
-    mesh.userData = { muscleName, score: score?.score ?? 0, tierName: score?.tier.name ?? 'None' };
-    return mesh;
-  }
-
-  // ===== TORSO =====
+// Map mesh names (from GLB) to muscle groups
+// These are common naming conventions in anatomy models
+const MESH_MUSCLE_MAP: Record<string, string> = {
   // Chest
-  const chestGeo = new THREE.SphereGeometry(0.42, 16, 16);
-  bodyGroup.add(createMuscle(chestGeo, [0, 0.3, 0.15], undefined, [1, 0.8, 0.5], 'Chest'));
-
+  'chest': 'Chest', 'pectorals': 'Chest', 'pec': 'Chest', 'pecs': 'Chest',
+  'pectoralis': 'Chest', 'chest_muscle': 'Chest',
   // Back
-  const backGeo = new THREE.SphereGeometry(0.42, 16, 16);
-  bodyGroup.add(createMuscle(backGeo, [0, 0.3, -0.15], undefined, [1, 0.8, 0.5], 'Back'));
-
-  // Abs / Core
-  const absGeo = new THREE.CylinderGeometry(0.3, 0.28, 0.5, 12);
-  bodyGroup.add(createMuscle(absGeo, [0, -0.15, 0.05], undefined, [1, 1, 0.6], 'Abs'));
-
-  // ===== SHOULDERS =====
-  const shoulderGeo = new THREE.SphereGeometry(0.15, 12, 12);
-  bodyGroup.add(createMuscle(shoulderGeo, [-0.45, 0.5, 0], undefined, [1, 0.8, 0.8], 'Shoulders'));
-  bodyGroup.add(createMuscle(shoulderGeo, [0.45, 0.5, 0], undefined, [1, 0.8, 0.8], 'Shoulders'));
-
-  // ===== ARMS =====
-  // Biceps (upper arm front)
-  const bicepGeo = new THREE.CylinderGeometry(0.08, 0.07, 0.35, 8);
-  bodyGroup.add(createMuscle(bicepGeo, [-0.52, 0.2, 0.08], [0, 0, 0.15], undefined, 'Biceps'));
-  bodyGroup.add(createMuscle(bicepGeo, [0.52, 0.2, 0.08], [0, 0, -0.15], undefined, 'Biceps'));
-
-  // Triceps (upper arm back)
-  const tricepGeo = new THREE.CylinderGeometry(0.07, 0.06, 0.35, 8);
-  bodyGroup.add(createMuscle(tricepGeo, [-0.52, 0.2, -0.08], [0, 0, 0.15], undefined, 'Triceps'));
-  bodyGroup.add(createMuscle(tricepGeo, [0.52, 0.2, -0.08], [0, 0, -0.15], undefined, 'Triceps'));
-
+  'back': 'Back', 'latissimus': 'Back', 'lats': 'Back', 'trapezius': 'Back',
+  'traps': 'Back', 'rhomboid': 'Back', 'upper_back': 'Back',
+  // Shoulders
+  'shoulder': 'Shoulders', 'shoulders': 'Shoulders', 'deltoid': 'Shoulders',
+  'delts': 'Shoulders', 'delt': 'Shoulders',
+  // Biceps
+  'bicep': 'Biceps', 'biceps': 'Biceps', 'biceps_brachii': 'Biceps',
+  // Triceps
+  'tricep': 'Triceps', 'triceps': 'Triceps', 'triceps_brachii': 'Triceps',
   // Forearms
-  const forearmGeo = new THREE.CylinderGeometry(0.06, 0.05, 0.3, 8);
-  bodyGroup.add(createMuscle(forearmGeo, [-0.56, -0.15, 0.05], [0, 0, 0.1], undefined, 'Forearms'));
-  bodyGroup.add(createMuscle(forearmGeo, [0.56, -0.15, 0.05], [0, 0, -0.1], undefined, 'Forearms'));
-
-  // ===== LEGS =====
-  // Quads (upper leg front)
-  const quadGeo = new THREE.CylinderGeometry(0.14, 0.11, 0.5, 10);
-  bodyGroup.add(createMuscle(quadGeo, [-0.18, -0.7, 0.08], undefined, undefined, 'Legs'));
-  bodyGroup.add(createMuscle(quadGeo, [0.18, -0.7, 0.08], undefined, undefined, 'Legs'));
-
+  'forearm': 'Forearms', 'forearms': 'Forearms', 'brachioradialis': 'Forearms',
+  // Legs / Quads
+  'quad': 'Legs', 'quads': 'Legs', 'quadriceps': 'Legs', 'thigh': 'Legs',
+  'thighs': 'Legs', 'leg': 'Legs', 'legs': 'Legs',
+  'vastus': 'Legs', 'rectus_femoris': 'Legs',
+  // Hamstrings
+  'hamstring': 'Legs', 'hamstrings': 'Legs',
   // Calves
-  const calfGeo = new THREE.CylinderGeometry(0.09, 0.07, 0.4, 8);
-  bodyGroup.add(createMuscle(calfGeo, [-0.18, -1.2, 0.03], undefined, undefined, 'Legs'));
-  bodyGroup.add(createMuscle(calfGeo, [0.18, -1.2, 0.03], undefined, undefined, 'Legs'));
+  'calf': 'Legs', 'calves': 'Legs', 'gastrocnemius': 'Legs',
+  // Abs
+  'abs': 'Abs', 'abdominals': 'Abs', 'abdomen': 'Abs', 'core': 'Abs',
+  'rectus_abdominis': 'Abs', 'obliques': 'Abs',
+};
 
-  // ===== HEAD =====
-  const headGeo = new THREE.SphereGeometry(0.18, 12, 12);
-  const headMat = baseMaterial.clone();
-  headMat.opacity = 0.4;
-  const head = new THREE.Mesh(headGeo, headMat);
-  head.position.set(0, 0.75, 0);
-  bodyGroup.add(head);
-
-  // Position the whole body
-  bodyGroup.position.y = 0.3;
-
-  return bodyGroup;
+function findMuscleGroup(name: string): string | null {
+  const lower = name.toLowerCase().replace(/[_\-\s]/g, '');
+  for (const [key, muscle] of Object.entries(MESH_MUSCLE_MAP)) {
+    const cleanKey = key.toLowerCase().replace(/[_\-\s]/g, '');
+    if (lower.includes(cleanKey) || cleanKey.includes(lower)) {
+      return muscle;
+    }
+  }
+  return null;
 }
 
-export default function BodyHeatmap3D({ muscleScores, height = 350 }: BodyHeatmap3DProps) {
+export default function BodyHeatmap3D({ muscleScores, height = 400 }: BodyHeatmap3DProps) {
   const mountRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<{
     scene: THREE.Scene;
     camera: THREE.PerspectiveCamera;
     renderer: THREE.WebGLRenderer;
-    bodyGroup: THREE.Group;
+    model: THREE.Group;
     animationId: number;
     isDragging: boolean;
     previousMousePosition: { x: number; y: number };
   } | null>(null);
   const [hoveredMuscle, setHoveredMuscle] = useState<string>('');
   const [hoveredScore, setHoveredScore] = useState<number>(0);
+  const [isLoading, setIsLoading] = useState(true);
 
   const scoresMap = useMemo(() => {
     const map = new Map<string, MuscleScore>();
@@ -130,6 +72,47 @@ export default function BodyHeatmap3D({ muscleScores, height = 350 }: BodyHeatma
     }
     return map;
   }, [muscleScores]);
+
+  // Apply tier colors to the model
+  const applyColors = (model: THREE.Group) => {
+    model.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        const meshName = child.name.toLowerCase();
+        const muscle = findMuscleGroup(meshName);
+        const score = muscle ? scoresMap.get(muscle) : undefined;
+
+        if (score && score.score > 0) {
+          const color = new THREE.Color(score.tier.color);
+          const emissiveIntensity = score.score >= 1000 ? 0.4 : score.score >= 500 ? 0.2 : 0.1;
+          const emissive = new THREE.Color(score.tier.color).multiplyScalar(emissiveIntensity);
+
+          child.material = new THREE.MeshStandardMaterial({
+            color,
+            emissive,
+            emissiveIntensity: emissiveIntensity,
+            roughness: 0.5,
+            metalness: 0.1,
+            transparent: true,
+            opacity: 0.9,
+          });
+        } else {
+          // Default: dark with subtle visibility
+          child.material = new THREE.MeshStandardMaterial({
+            color: new THREE.Color(0x1a1a2e),
+            emissive: new THREE.Color(0x000000),
+            roughness: 0.7,
+            metalness: 0.05,
+            transparent: true,
+            opacity: 0.6,
+          });
+        }
+
+        // Store muscle name for raycasting
+        child.userData.muscleName = muscle ?? meshName;
+        child.userData.score = score?.score ?? 0;
+      }
+    });
+  };
 
   useEffect(() => {
     if (!mountRef.current) return;
@@ -143,8 +126,8 @@ export default function BodyHeatmap3D({ muscleScores, height = 350 }: BodyHeatma
     scene.background = new THREE.Color(0x0B0C10);
 
     // Camera
-    const camera = new THREE.PerspectiveCamera(45, width / h, 0.1, 100);
-    camera.position.set(0, 0, 3.5);
+    const camera = new THREE.PerspectiveCamera(40, width / h, 0.1, 100);
+    camera.position.set(0, 0.5, 4);
     camera.lookAt(0, 0, 0);
 
     // Renderer
@@ -152,132 +135,184 @@ export default function BodyHeatmap3D({ muscleScores, height = 350 }: BodyHeatma
     renderer.setSize(width, h);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setClearColor(0x0B0C10, 1);
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.2;
     container.appendChild(renderer.domElement);
 
-    // Lights
-    const ambientLight = new THREE.AmbientLight(0x404060, 0.6);
+    // Lights — dramatic studio lighting
+    const ambientLight = new THREE.AmbientLight(0x404060, 0.5);
     scene.add(ambientLight);
 
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    directionalLight.position.set(2, 3, 4);
-    scene.add(directionalLight);
+    const keyLight = new THREE.DirectionalLight(0xffffff, 1.2);
+    keyLight.position.set(3, 4, 5);
+    scene.add(keyLight);
 
-    const backLight = new THREE.DirectionalLight(0x4488ff, 0.3);
-    backLight.position.set(-2, -1, -3);
-    scene.add(backLight);
+    const fillLight = new THREE.DirectionalLight(0x4488ff, 0.4);
+    fillLight.position.set(-3, 2, -2);
+    scene.add(fillLight);
 
-    // Body
-    const bodyGroup = createBodyMesh(scene, scoresMap);
-    scene.add(bodyGroup);
+    const rimLight = new THREE.DirectionalLight(0xff5e00, 0.3);
+    rimLight.position.set(0, -2, -4);
+    scene.add(rimLight);
 
-    // Store refs
-    const state = {
-      scene,
-      camera,
-      renderer,
-      bodyGroup,
-      animationId: 0,
-      isDragging: false,
-      previousMousePosition: { x: 0, y: 0 },
-    };
-    sceneRef.current = state;
+    // Ground plane with subtle reflection
+    const groundGeo = new THREE.PlaneGeometry(10, 10);
+    const groundMat = new THREE.MeshStandardMaterial({
+      color: 0x0a0a14,
+      roughness: 0.9,
+      metalness: 0.1,
+      transparent: true,
+      opacity: 0.5,
+    });
+    const ground = new THREE.Mesh(groundGeo, groundMat);
+    ground.rotation.x = -Math.PI / 2;
+    ground.position.y = -1.8;
+    scene.add(ground);
 
-    // Mouse/touch interaction for rotation
-    const onMouseDown = (e: MouseEvent) => {
-      state.isDragging = true;
-      state.previousMousePosition = { x: e.clientX, y: e.clientY };
-    };
-    const onMouseMove = (e: MouseEvent) => {
-      if (!state.isDragging) return;
-      const deltaX = e.clientX - state.previousMousePosition.x;
-      const deltaY = e.clientY - state.previousMousePosition.y;
-      bodyGroup.rotation.y += deltaX * 0.01;
-      bodyGroup.rotation.x += deltaY * 0.005;
-      bodyGroup.rotation.x = Math.max(-0.5, Math.min(0.5, bodyGroup.rotation.x));
-      state.previousMousePosition = { x: e.clientX, y: e.clientY };
+    // Load GLB model
+    const loader = new GLTFLoader();
+    loader.load(
+      '/forge-gymAK/male_anatomy.glb',
+      (gltf) => {
+        const model = gltf.scene;
 
-      // Raycast for hover
-      const rect = renderer.domElement.getBoundingClientRect();
-      const mouse = new THREE.Vector2(
-        ((e.clientX - rect.left) / rect.width) * 2 - 1,
-        -((e.clientY - rect.top) / rect.height) * 2 + 1,
-      );
-      const raycaster = new THREE.Raycaster();
-      raycaster.setFromCamera(mouse, camera);
-      const intersects = raycaster.intersectObjects(bodyGroup.children, false);
-      if (intersects.length > 0) {
-        const obj = intersects[0].object;
-        if (obj.userData.muscleName) {
-          setHoveredMuscle(obj.userData.muscleName);
-          setHoveredScore(obj.userData.score);
-        }
-      } else {
-        setHoveredMuscle('');
-      }
-    };
-    const onMouseUp = () => { state.isDragging = false; };
+        // Center and scale the model
+        const box = new THREE.Box3().setFromObject(model);
+        const center = box.getCenter(new THREE.Vector3());
+        const size = box.getSize(new THREE.Vector3());
+        const maxDim = Math.max(size.x, size.y, size.z);
+        const scale = 2.5 / maxDim;
 
-    // Touch events
-    const onTouchStart = (e: TouchEvent) => {
-      if (e.touches.length === 1) {
-        state.isDragging = true;
-        state.previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-      }
-    };
-    const onTouchMove = (e: TouchEvent) => {
-      if (!state.isDragging || e.touches.length !== 1) return;
-      const deltaX = e.touches[0].clientX - state.previousMousePosition.x;
-      const deltaY = e.touches[0].clientY - state.previousMousePosition.y;
-      bodyGroup.rotation.y += deltaX * 0.01;
-      bodyGroup.rotation.x += deltaY * 0.005;
-      bodyGroup.rotation.x = Math.max(-0.5, Math.min(0.5, bodyGroup.rotation.x));
-      state.previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-    };
-    const onTouchEnd = () => { state.isDragging = false; };
+        model.scale.setScalar(scale);
+        model.position.sub(center.multiplyScalar(scale));
+        model.position.y += 0.3;
 
-    const canvas = renderer.domElement;
-    canvas.addEventListener('mousedown', onMouseDown);
-    canvas.addEventListener('mousemove', onMouseMove);
-    canvas.addEventListener('mouseup', onMouseUp);
-    canvas.addEventListener('mouseleave', onMouseUp);
-    canvas.addEventListener('touchstart', onTouchStart, { passive: true });
-    canvas.addEventListener('touchmove', onTouchMove, { passive: true });
-    canvas.addEventListener('touchend', onTouchEnd);
+        // Apply tier colors
+        applyColors(model);
 
-    // Animation loop — gentle auto-rotate
-    let time = 0;
-    const animate = () => {
-      state.animationId = requestAnimationFrame(animate);
-      time += 0.005;
-      if (!state.isDragging) {
-        bodyGroup.rotation.y = Math.sin(time) * 0.3;
-      }
-      renderer.render(scene, camera);
-    };
-    animate();
+        scene.add(model);
 
-    // Resize handler
-    const onResize = () => {
-      const w = container.clientWidth;
-      camera.aspect = w / h;
-      camera.updateProjectionMatrix();
-      renderer.setSize(w, h);
-    };
-    window.addEventListener('resize', onResize);
+        const state = {
+          scene,
+          camera,
+          renderer,
+          model,
+          animationId: 0,
+          isDragging: false,
+          previousMousePosition: { x: 0, y: 0 },
+        };
+        sceneRef.current = state;
+        setIsLoading(false);
+
+        // Mouse/touch rotation
+        const onMouseDown = (e: MouseEvent) => {
+          state.isDragging = true;
+          state.previousMousePosition = { x: e.clientX, y: e.clientY };
+        };
+        const onMouseMove = (e: MouseEvent) => {
+          if (!state.isDragging) return;
+          const deltaX = e.clientX - state.previousMousePosition.x;
+          const deltaY = e.clientY - state.previousMousePosition.y;
+          model.rotation.y += deltaX * 0.008;
+          model.rotation.x += deltaY * 0.004;
+          model.rotation.x = Math.max(-0.8, Math.min(0.8, model.rotation.x));
+          state.previousMousePosition = { x: e.clientX, y: e.clientY };
+
+          // Raycast for hover info
+          const rect = renderer.domElement.getBoundingClientRect();
+          const mouse = new THREE.Vector2(
+            ((e.clientX - rect.left) / rect.width) * 2 - 1,
+            -((e.clientY - rect.top) / rect.height) * 2 + 1,
+          );
+          const raycaster = new THREE.Raycaster();
+          raycaster.setFromCamera(mouse, camera);
+          const intersects = raycaster.intersectObjects(model.children, true);
+          if (intersects.length > 0) {
+            const obj = intersects[0].object;
+            if (obj.userData.muscleName) {
+              setHoveredMuscle(obj.userData.muscleName);
+              setHoveredScore(obj.userData.score);
+            }
+          } else {
+            setHoveredMuscle('');
+          }
+        };
+        const onMouseUp = () => { state.isDragging = false; };
+
+        const onTouchStart = (e: TouchEvent) => {
+          if (e.touches.length === 1) {
+            state.isDragging = true;
+            state.previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+          }
+        };
+        const onTouchMove = (e: TouchEvent) => {
+          if (!state.isDragging || e.touches.length !== 1) return;
+          const deltaX = e.touches[0].clientX - state.previousMousePosition.x;
+          const deltaY = e.touches[0].clientY - state.previousMousePosition.y;
+          model.rotation.y += deltaX * 0.008;
+          model.rotation.x += deltaY * 0.004;
+          model.rotation.x = Math.max(-0.8, Math.min(0.8, model.rotation.x));
+          state.previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        };
+        const onTouchEnd = () => { state.isDragging = false; };
+
+        const canvas = renderer.domElement;
+        canvas.addEventListener('mousedown', onMouseDown);
+        canvas.addEventListener('mousemove', onMouseMove);
+        canvas.addEventListener('mouseup', onMouseUp);
+        canvas.addEventListener('mouseleave', onMouseUp);
+        canvas.addEventListener('touchstart', onTouchStart, { passive: true });
+        canvas.addEventListener('touchmove', onTouchMove, { passive: true });
+        canvas.addEventListener('touchend', onTouchEnd);
+
+        // Animation loop — gentle auto-rotate
+        let time = 0;
+        const animate = () => {
+          state.animationId = requestAnimationFrame(animate);
+          time += 0.004;
+          if (!state.isDragging) {
+            model.rotation.y = Math.sin(time) * 0.4;
+          }
+          renderer.render(scene, camera);
+        };
+        animate();
+
+        // Resize handler
+        const onResize = () => {
+          const w = container.clientWidth;
+          camera.aspect = w / h;
+          camera.updateProjectionMatrix();
+          renderer.setSize(w, h);
+        };
+        window.addEventListener('resize', onResize);
+
+        // Store cleanup refs
+        (state as any)._cleanup = () => {
+          window.removeEventListener('resize', onResize);
+          canvas.removeEventListener('mousedown', onMouseDown);
+          canvas.removeEventListener('mousemove', onMouseMove);
+          canvas.removeEventListener('mouseup', onMouseUp);
+          canvas.removeEventListener('mouseleave', onMouseUp);
+          canvas.removeEventListener('touchstart', onTouchStart);
+          canvas.removeEventListener('touchmove', onTouchMove);
+          canvas.removeEventListener('touchend', onTouchEnd);
+        };
+      },
+      () => {},
+      (error) => {
+        console.error('Failed to load model:', error);
+        setIsLoading(false);
+      },
+    );
 
     return () => {
-      cancelAnimationFrame(state.animationId);
-      window.removeEventListener('resize', onResize);
-      canvas.removeEventListener('mousedown', onMouseDown);
-      canvas.removeEventListener('mousemove', onMouseMove);
-      canvas.removeEventListener('mouseup', onMouseUp);
-      canvas.removeEventListener('mouseleave', onMouseUp);
-      canvas.removeEventListener('touchstart', onTouchStart);
-      canvas.removeEventListener('touchmove', onTouchMove);
-      canvas.removeEventListener('touchend', onTouchEnd);
-      renderer.dispose();
-      if (container.contains(renderer.domElement)) {
-        container.removeChild(renderer.domElement);
+      if (sceneRef.current) {
+        cancelAnimationFrame(sceneRef.current.animationId);
+        (sceneRef.current as any)._cleanup?.();
+        renderer.dispose();
+        if (container.contains(renderer.domElement)) {
+          container.removeChild(renderer.domElement);
+        }
       }
     };
   }, [scoresMap, height]);
@@ -285,23 +320,24 @@ export default function BodyHeatmap3D({ muscleScores, height = 350 }: BodyHeatma
   // Update colors when scores change
   useEffect(() => {
     if (!sceneRef.current) return;
-    const { bodyGroup } = sceneRef.current;
-    bodyGroup.children.forEach((child) => {
-      if (child instanceof THREE.Mesh && child.userData.muscleName) {
-        const score = scoresMap.get(child.userData.muscleName);
-        if (score) {
-          const color = new THREE.Color(score.tier.color);
-          (child.material as THREE.MeshPhongMaterial).color.copy(color);
-          child.userData.score = score.score;
-          child.userData.tierName = score.tier.name;
-        }
-      }
-    });
+    applyColors(sceneRef.current.model);
   }, [scoresMap]);
 
   return (
     <div className="relative">
       <div ref={mountRef} style={{ width: '100%', height }} className="rounded-xl overflow-hidden" />
+
+      {isLoading && (
+        <div
+          className="absolute inset-0 flex items-center justify-center rounded-xl"
+          style={{ background: 'rgba(11,12,16,0.8)' }}
+        >
+          <div className="text-center">
+            <div className="w-8 h-8 border-2 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Loading 3D model...</p>
+          </div>
+        </div>
+      )}
 
       {/* Hover tooltip */}
       {hoveredMuscle && (
@@ -317,7 +353,6 @@ export default function BodyHeatmap3D({ muscleScores, height = 350 }: BodyHeatma
         </div>
       )}
 
-      {/* Instructions */}
       <p className="text-[10px] text-center mt-2" style={{ color: 'var(--text-muted)' }}>
         Drag to rotate · Hover muscles for details
       </p>
