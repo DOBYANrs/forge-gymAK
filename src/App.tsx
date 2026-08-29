@@ -12,6 +12,7 @@ const HistoryPage = lazy(() => import('./pages/HistoryPage'));
 const ProgressPage = lazy(() => import('./pages/ProgressPage'));
 const BodyPage = lazy(() => import('./pages/BodyPage'));
 const SocialPage = lazy(() => import('./pages/SocialPage'));
+const RankingPage = lazy(() => import('./pages/RankingPage'));
 
 function PageLoader() {
   return (
@@ -68,6 +69,11 @@ function AppContent() {
         <Route path="social" element={
           <Suspense fallback={<PageLoader />}>
             <SocialPage />
+          </Suspense>
+        } />
+        <Route path="ranking" element={
+          <Suspense fallback={<PageLoader />}>
+            <RankingPage />
           </Suspense>
         } />
       </Route>
