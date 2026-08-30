@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import gsap from 'gsap';
 import type { MuscleScore } from '../../utils/muscleScoring';
+import { getDaySchedule } from '../../data/schedule';
 
 interface CinematicIntroProps {
   muscleScores: MuscleScore[];
@@ -11,61 +12,33 @@ interface CinematicIntroProps {
   height?: number;
 }
 
-/* 
- * Solo Leveling-style cinematic intro:
- * 1. Dark scene fades in
- * 2. 3D body model does a dramatic 360° spin
- * 3. Today's active muscles glow orange
- * 4. Camera dives into highlighted muscles
- * 5. Screen wipes to workout view
- */
+// Get today's workout type for choreography
+function getDayType(): string {
+  const now = new Date();
+  const schedule = getDaySchedule(now);
+  if (schedule.isRestDay) return 'rest';
+  return schedule.dayOfWeek;
+}
 
-// Maps Z-position (height) to muscle groups — same logic as BodyHeatmap3D
-// Z: -0.5 = feet, +0.5 = head
+// Vertex → muscle mapping (Z = height, X = width, Y = front/back)
 function getVertexMuscle(x: number, y: number, z: number): string | null {
-  // Arms — far from center on X axis
   if (Math.abs(x) > 0.065) {
     if (z > 0.05 && z < 0.30) return 'Biceps';
     if (z > -0.10 && z < 0.05) return 'Triceps';
     if (z < -0.10 && z > -0.30) return 'Forearms';
     return null;
   }
-
   const isBack = y < -0.02;
-
-  // Head
   if (z > 0.35) return null;
-
-  // Shoulders
   if (z > 0.20 && z < 0.35) return 'Shoulders';
-
-  // Upper torso
-  if (z > 0.05 && z < 0.20) {
-    return isBack ? 'Back' : 'Chest';
-  }
-
-  // Mid torso
-  if (z > -0.10 && z < 0.05) {
-    return isBack ? 'Back' : 'Abs';
-  }
-
-  // Hips/upper legs
-  if (z > -0.25 && z < -0.10) {
-    return isBack ? 'Hamstrings' : 'Quads';
-  }
-
-  // Lower legs
-  if (z > -0.40 && z < -0.25) {
-    return isBack ? 'Hamstrings' : 'Quads';
-  }
-
-  // Calves/feet
+  if (z > 0.05 && z < 0.20) return isBack ? 'Back' : 'Chest';
+  if (z > -0.10 && z < 0.05) return isBack ? 'Back' : 'Abs';
+  if (z > -0.25 && z < -0.10) return isBack ? 'Hamstrings' : 'Quads';
+  if (z > -0.40 && z < -0.25) return isBack ? 'Hamstrings' : 'Quads';
   if (z > -0.50 && z < -0.40) return 'Calves';
-
   return null;
 }
 
-// TIER_COLORS for highlights
 const TIER_COLORS: Record<string, THREE.Color> = {
   Beginner: new THREE.Color(0x4A4E5D),
   Novice: new THREE.Color(0x00E676),
@@ -75,8 +48,8 @@ const TIER_COLORS: Record<string, THREE.Color> = {
   Legendary: new THREE.Color(0xFF1744),
 };
 
-const HIGHLIGHT_COLOR = new THREE.Color(0xFF5E00); // Forge Orange
-const NEUTRAL_COLOR = new THREE.Color(0x1a1e2e);
+const HIGHLIGHT_COLOR = new THREE.Color(0xFF5E00);
+const NEUTRAL_COLOR = new THREE.Color(0x22263a);
 
 export default function CinematicIntro({
   muscleScores,
@@ -86,17 +59,19 @@ export default function CinematicIntro({
 }: CinematicIntroProps) {
   const mountRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
-  const [phase, setPhase] = useState<'loading' | 'spin' | 'highlight' | 'zoom' | 'done'>('loading');
+  const [phase, setPhase] = useState<string>('loading');
   const [loadPercent, setLoadPercent] = useState(0);
   const cleanupRef = useRef<(() => void) | null>(null);
 
-  // Score map for vertex coloring
-  const scoreMap = useRef(new Map<string, MuscleScore>());
+  const scoreMapRef = useRef(new Map<string, MuscleScore>());
   useEffect(() => {
     const map = new Map<string, MuscleScore>();
     for (const s of muscleScores) map.set(s.muscle, s);
-    scoreMap.current = map;
+    scoreMapRef.current = map;
   }, [muscleScores]);
+
+  const onCompleteRef = useRef(onComplete);
+  onCompleteRef.current = onComplete;
 
   useEffect(() => {
     if (!mountRef.current) return;
@@ -104,17 +79,17 @@ export default function CinematicIntro({
     const container = mountRef.current;
     const w = container.clientWidth;
     const h = height;
+    const dayType = getDayType();
+    const highlightSet = new Set(highlightMuscles);
 
-    // Scene
+    // ===== SCENE SETUP =====
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x050508);
 
-    // Camera
     const camera = new THREE.PerspectiveCamera(40, w / h, 0.1, 100);
     camera.position.set(0, 0.3, 5);
     camera.lookAt(0, 0, 0);
 
-    // Renderer
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(w, h);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -123,7 +98,7 @@ export default function CinematicIntro({
     renderer.toneMappingExposure = 3.0;
     container.appendChild(renderer.domElement);
 
-    // BRIGHT lighting — model should be clearly visible from the start
+    // ===== LIGHTING (bright from start) =====
     const ambientLight = new THREE.AmbientLight(0xffffff, 1.5);
     scene.add(ambientLight);
 
@@ -149,37 +124,85 @@ export default function CinematicIntro({
     topLight.position.set(0, 6, 0);
     scene.add(topLight);
 
-    // Light fog for cinematic depth — not too heavy
     scene.fog = new THREE.FogExp2(0x050508, 0.06);
 
-    // Particle field — floating embers
-    const particleCount = 200;
+    // ===== PARTICLE FIELD =====
+    const particleCount = 300;
     const particleGeo = new THREE.BufferGeometry();
-    const positions = new Float32Array(particleCount * 3);
-    const velocities = new Float32Array(particleCount * 3);
+    const particlePositions = new Float32Array(particleCount * 3);
+    const particleVelocities = new Float32Array(particleCount * 3);
+    const particleSizes = new Float32Array(particleCount);
     for (let i = 0; i < particleCount; i++) {
-      positions[i * 3] = (Math.random() - 0.5) * 8;
-      positions[i * 3 + 1] = (Math.random() - 0.5) * 6;
-      positions[i * 3 + 2] = (Math.random() - 0.5) * 8;
-      velocities[i * 3] = (Math.random() - 0.5) * 0.002;
-      velocities[i * 3 + 1] = Math.random() * 0.003 + 0.001;
-      velocities[i * 3 + 2] = (Math.random() - 0.5) * 0.002;
+      particlePositions[i * 3] = (Math.random() - 0.5) * 10;
+      particlePositions[i * 3 + 1] = (Math.random() - 0.5) * 8;
+      particlePositions[i * 3 + 2] = (Math.random() - 0.5) * 10;
+      particleVelocities[i * 3] = (Math.random() - 0.5) * 0.003;
+      particleVelocities[i * 3 + 1] = Math.random() * 0.005 + 0.001;
+      particleVelocities[i * 3 + 2] = (Math.random() - 0.5) * 0.003;
+      particleSizes[i] = Math.random() * 0.04 + 0.01;
     }
-    particleGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    particleGeo.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
     const particleMat = new THREE.PointsMaterial({
       color: 0xFF5E00,
       size: 0.03,
       transparent: true,
-      opacity: 0.6,
+      opacity: 0.5,
+      blending: THREE.AdditiveBlending,
+      sizeAttenuation: true,
+    });
+    scene.add(new THREE.Points(particleGeo, particleMat));
+
+    // ===== RING PARTICLES (orbit around model) =====
+    const ringCount = 80;
+    const ringGeo = new THREE.BufferGeometry();
+    const ringPositions = new Float32Array(ringCount * 3);
+    for (let i = 0; i < ringCount; i++) {
+      const angle = (i / ringCount) * Math.PI * 2;
+      ringPositions[i * 3] = Math.cos(angle) * 1.8;
+      ringPositions[i * 3 + 1] = 0;
+      ringPositions[i * 3 + 2] = Math.sin(angle) * 1.8;
+    }
+    ringGeo.setAttribute('position', new THREE.BufferAttribute(ringPositions, 3));
+    const ringMat = new THREE.PointsMaterial({
+      color: 0xFF5E00,
+      size: 0.02,
+      transparent: true,
+      opacity: 0.3,
       blending: THREE.AdditiveBlending,
     });
-    const particles = new THREE.Points(particleGeo, particleMat);
-    scene.add(particles);
+    const ringParticles = new THREE.Points(ringGeo, ringMat);
+    scene.add(ringParticles);
 
-    let model: THREE.Group | null = null;
+    // ===== LIGHT BEAM (volumetric cone) =====
+    const beamGeo = new THREE.CylinderGeometry(0.01, 1.5, 4, 16, 1, true);
+    const beamMat = new THREE.MeshBasicMaterial({
+      color: 0xFF5E00,
+      transparent: true,
+      opacity: 0.04,
+      blending: THREE.AdditiveBlending,
+      side: THREE.DoubleSide,
+    });
+    const lightBeam = new THREE.Mesh(beamGeo, beamMat);
+    lightBeam.position.set(0, 3, 0);
+    lightBeam.rotation.x = Math.PI;
+    scene.add(lightBeam);
 
-    // Apply vertex coloring — neutral at first, highlighted muscles get orange glow
-    const applyIntroColors = (group: THREE.Group, highlighted: Set<string>, isHighlightPhase: boolean) => {
+    // ===== GROUND GLOW =====
+    const groundGeo = new THREE.RingGeometry(0.3, 2.5, 64);
+    const groundMat = new THREE.MeshBasicMaterial({
+      color: 0xFF5E00,
+      transparent: true,
+      opacity: 0.06,
+      blending: THREE.AdditiveBlending,
+      side: THREE.DoubleSide,
+    });
+    const groundGlow = new THREE.Mesh(groundGeo, groundMat);
+    groundGlow.rotation.x = -Math.PI / 2;
+    groundGlow.position.y = -1.5;
+    scene.add(groundGlow);
+
+    // ===== VERTEX COLORING =====
+    const applyColors = (group: THREE.Group, highlighted: Set<string>, isHighlightPhase: boolean) => {
       group.traverse((child) => {
         if (child instanceof THREE.Mesh && child.geometry) {
           const geo = child.geometry;
@@ -192,37 +215,28 @@ export default function CinematicIntro({
             const x = pos.getX(i);
             const y = pos.getY(i);
             const z = pos.getZ(i);
-
             const muscle = getVertexMuscle(x, y, z);
 
             if (isHighlightPhase && muscle && highlighted.has(muscle)) {
-              // This vertex belongs to a highlighted muscle — BRIGHT tier color
-              const score = scoreMap.current.get(muscle);
-              const tierColor = score?.tier.color
-                ? TIER_COLORS[score.tier.name] ?? HIGHLIGHT_COLOR
-                : HIGHLIGHT_COLOR;
-              // Boost brightness for highlighted muscles
+              const score = scoreMapRef.current.get(muscle);
+              const tc = score?.tier.color ? TIER_COLORS[score.tier.name] ?? HIGHLIGHT_COLOR : HIGHLIGHT_COLOR;
               const boost = 1.3;
-              colors[i * 3] = Math.min(1, tierColor.r * boost);
-              colors[i * 3 + 1] = Math.min(1, tierColor.g * boost);
-              colors[i * 3 + 2] = Math.min(1, tierColor.b * boost);
+              colors[i * 3] = Math.min(1, tc.r * boost);
+              colors[i * 3 + 1] = Math.min(1, tc.g * boost);
+              colors[i * 3 + 2] = Math.min(1, tc.b * boost);
             } else if (muscle) {
-              // Known muscle but not highlighted — visible neutral
-              const score = scoreMap.current.get(muscle);
+              const score = scoreMapRef.current.get(muscle);
               if (score && score.score > 0) {
                 const c = TIER_COLORS[score.tier.name] ?? NEUTRAL_COLOR;
-                // Much brighter — 45% of tier color
                 colors[i * 3] = c.r * 0.45;
                 colors[i * 3 + 1] = c.g * 0.45;
                 colors[i * 3 + 2] = c.b * 0.45;
               } else {
-                // Visible dark gray — clearly see the body shape
                 colors[i * 3] = 0.22;
                 colors[i * 3 + 1] = 0.22;
                 colors[i * 3 + 2] = 0.26;
               }
             } else {
-              // Head or unknown — visible but muted
               colors[i * 3] = 0.18;
               colors[i * 3 + 1] = 0.18;
               colors[i * 3 + 2] = 0.20;
@@ -231,11 +245,9 @@ export default function CinematicIntro({
 
           geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
-          // Use the tier color for emissive glow on highlighted muscles
           let emissiveColor = new THREE.Color(0x000000);
           let emissiveStrength = 0;
           if (isHighlightPhase) {
-            // Find the most common muscle in this mesh's vertices
             const muscleCounts = new Map<string, number>();
             for (let i = 0; i < pos.count; i++) {
               const m = getVertexMuscle(pos.getX(i), pos.getY(i), pos.getZ(i));
@@ -247,11 +259,9 @@ export default function CinematicIntro({
               if (count > maxCount) { maxCount = count; primaryMuscle = muscle; }
             }
             if (primaryMuscle && highlighted.has(primaryMuscle)) {
-              const score = scoreMap.current.get(primaryMuscle);
-              const baseColor = score?.tier.color
-                ? TIER_COLORS[score.tier.name] ?? HIGHLIGHT_COLOR
-                : HIGHLIGHT_COLOR;
-              emissiveColor = baseColor.clone();
+              const score = scoreMapRef.current.get(primaryMuscle);
+              const bc = score?.tier.color ? TIER_COLORS[score.tier.name] ?? HIGHLIGHT_COLOR : HIGHLIGHT_COLOR;
+              emissiveColor = bc.clone();
               emissiveStrength = 0.6;
             }
           }
@@ -270,12 +280,12 @@ export default function CinematicIntro({
       });
     };
 
-    // Load model
+    // ===== LOAD MODEL =====
     const loader = new GLTFLoader();
     loader.load(
       '/forge-gymAK/male_anatomy.glb',
       (gltf) => {
-        model = gltf.scene;
+        const model = gltf.scene;
 
         // Center and scale
         const box = new THREE.Box3().setFromObject(model);
@@ -287,153 +297,164 @@ export default function CinematicIntro({
         model.position.sub(center.multiplyScalar(scale));
         model.position.y += 0.3;
 
-        // Initial dark coloring
-        const highlightSet = new Set(highlightMuscles);
-        applyIntroColors(model, highlightSet, false);
+        applyColors(model, highlightSet, false);
         scene.add(model);
 
         setPhase('spin');
 
-        // ====== GSAP CINEMATIC ANIMATION ======
-
+        // ===== DAY-SPECIFIC CINEMATIC CHOREOGRAPHY =====
         const tl = gsap.timeline({
           onComplete: () => {
             setPhase('done');
-            onComplete();
+            onCompleteRef.current();
           },
         });
 
-        // Phase 1: Scene brightens further + model spins 360° (2.5 seconds)
-        tl.to(ambientLight, {
-          intensity: 2.0,
-          duration: 2.5,
-          ease: 'power2.inOut',
-        }, 0);
+        // === UNIVERSAL: 360° dramatic spin (0 → 2.5s) ===
+        tl.to(ambientLight, { intensity: 2.0, duration: 2.5, ease: 'power2.inOut' }, 0);
+        tl.to(spotLight, { intensity: 4.5, duration: 2.5, ease: 'power2.inOut' }, 0);
+        tl.to(model.rotation, { y: Math.PI * 2, duration: 2.5, ease: 'power2.inOut' }, 0);
+        tl.fromTo(camera.position, { z: 5, y: 0.3 }, { z: 3.5, y: 0.1, duration: 2.5, ease: 'power2.inOut' }, 0);
 
-        tl.to(spotLight, {
-          intensity: 4.5,
-          duration: 2.5,
-          ease: 'power2.inOut',
-        }, 0);
+        // Ring particles orbit during spin
+        tl.to(ringParticles.rotation, { y: Math.PI * 2, duration: 2.5, ease: 'power2.inOut' }, 0);
 
-        tl.to(model.rotation, {
-          y: Math.PI * 2,
-          duration: 2.5,
-          ease: 'power2.inOut',
-        }, 0);
+        // Ground glow pulse
+        tl.to(groundMat, { opacity: 0.12, duration: 2.5, ease: 'power2.inOut' }, 0);
 
-        // Camera slightly moves during spin
-        tl.fromTo(camera.position,
-          { z: 5, y: 0.3 },
-          { z: 3.5, y: 0.1, duration: 2.5, ease: 'power2.inOut' },
-          0
-        );
-
-        // Phase 2: Highlight active muscles (at 2.5s)
+        // === Phase 2: Highlight muscles (2.5s) ===
         tl.call(() => {
           setPhase('highlight');
-          if (model) applyIntroColors(model, highlightSet, true);
-        }, [], 2.5);
-
-        // Muscle glow pulse — brighten all highlighted meshes
-        tl.call(() => {
-          if (!model) return;
+          applyColors(model, highlightSet, true);
+          // Brighten emissive on highlighted meshes
           model.traverse((child) => {
             if (child instanceof THREE.Mesh && child.material instanceof THREE.MeshStandardMaterial) {
-              gsap.to(child.material, {
-                emissiveIntensity: 1.2,
-                duration: 0.8,
-                ease: 'power2.out',
-              });
+              gsap.to(child.material, { emissiveIntensity: 1.2, duration: 0.8, ease: 'power2.out' });
             }
           });
         }, [], 2.5);
 
-        // Rim light pulses brighter orange
-        tl.to(rimLight, {
-          intensity: 2.5,
-          duration: 0.8,
-          ease: 'power2.out',
-        }, 2.5);
-        tl.call(() => {
-          rimLight.color.set(0xFF5E00);
-        }, [], 2.5);
+        // Rim light pulses
+        tl.to(rimLight, { intensity: 2.5, duration: 0.8, ease: 'power2.out' }, 2.5);
+        tl.call(() => { rimLight.color.set(0xFF5E00); }, [], 2.5);
 
-        // Phase 3: Camera zoom dive (3.5s → 5s)
-        tl.call(() => {
-          setPhase('zoom');
-        }, [], 3.5);
+        // === Phase 3: DAY-SPECIFIC CAMERA MOVEMENTS (3.5s → 5.5s) ===
 
-        // Camera dives into the chest/torso area
-        tl.to(camera.position, {
-          z: 0.8,
-          y: 0.15,
-          x: 0,
-          duration: 1.8,
-          ease: 'power3.in',
-        }, 3.5);
+        if (dayType === 'monday') {
+          // MONDAY: Chest/Shoulders/Biceps → zoom into chest
+          tl.call(() => setPhase('zoom'), [], 3.5);
+          tl.to(camera.position, { z: 0.6, y: 0.15, x: 0, duration: 2.0, ease: 'power3.in' }, 3.5);
+          tl.to(camera.rotation, { x: 0.05, y: 0, duration: 2.0, ease: 'power3.in' }, 3.5);
+          tl.to(scene.fog!, { density: 0.15, duration: 2.0, ease: 'power3.in' }, 3.5);
+          tl.to(spotLight, { angle: Math.PI / 12, intensity: 6.0, duration: 2.0, ease: 'power3.in' }, 3.5);
+        } else if (dayType === 'tuesday') {
+          // TUESDAY: Back/Quads/Abs → spin to back, dive into back
+          tl.call(() => setPhase('zoom'), [], 3.5);
+          tl.to(model.rotation, { y: Math.PI, duration: 1.0, ease: 'power2.inOut' }, 3.5);
+          tl.to(camera.position, { z: 0.6, y: 0.1, x: 0, duration: 2.0, ease: 'power3.in' }, 3.8);
+          tl.to(camera.rotation, { x: 0.05, y: 0, duration: 2.0, ease: 'power3.in' }, 3.8);
+          tl.to(scene.fog!, { density: 0.15, duration: 2.0, ease: 'power3.in' }, 3.8);
+          tl.to(spotLight, { angle: Math.PI / 12, intensity: 6.0, duration: 2.0, ease: 'power3.in' }, 3.8);
+          tl.call(() => { rimLight.color.set(0x00E5FF); }, [], 3.5);
+        } else if (dayType === 'wednesday' || dayType === 'sunday') {
+          // REST DAY: zoom out wide, then zoom into head (mind)
+          tl.call(() => setPhase('zoom'), [], 3.5);
+          // Pull back first
+          tl.to(camera.position, { z: 6, y: 0.5, duration: 1.0, ease: 'power2.in' }, 3.5);
+          tl.to(model.rotation, { y: 0, duration: 0.5, ease: 'power2.inOut' }, 3.5);
+          // Then dive into head
+          tl.to(camera.position, { z: 1.0, y: 1.2, x: 0, duration: 1.5, ease: 'power3.in' }, 4.5);
+          tl.to(camera.rotation, { x: -0.2, y: 0, duration: 1.5, ease: 'power3.in' }, 4.5);
+          tl.to(scene.fog!, { density: 0.12, duration: 2.0, ease: 'power3.in' }, 3.5);
+          tl.call(() => { rimLight.color.set(0xA855F7); }, [], 3.5);
+          // Purple glow for rest day
+          tl.to(ambientLight.color, { r: 0.8, g: 0.7, b: 1.0, duration: 1.0, ease: 'power2.out' }, 3.5);
+        } else if (dayType === 'thursday') {
+          // THURSDAY: Chest B + Back B → dual model effect
+          // Clone the model for the "back view"
+          const backModel = model.clone(true);
+          backModel.rotation.y = Math.PI; // facing back
+          backModel.position.x = -1.5; // offset left
+          model.position.x = 1.5; // offset right
+          model.rotation.y = 0;
+          scene.add(backModel);
 
-        tl.to(camera.rotation, {
-          x: 0.1,
-          y: 0,
-          duration: 1.8,
-          ease: 'power3.in',
-        }, 3.5);
+          tl.call(() => setPhase('zoom'), [], 3.5);
+          // Pull back to reveal both
+          tl.to(camera.position, { z: 5, y: 0.3, duration: 1.0, ease: 'power2.inOut' }, 3.5);
+          tl.to(model.position, { x: 1.5, duration: 1.0, ease: 'power2.inOut' }, 3.5);
+          // Zoom into the center between both
+          tl.to(camera.position, { z: 1.2, y: 0.15, x: 0, duration: 1.8, ease: 'power3.in' }, 4.5);
+          tl.to(camera.rotation, { x: 0.05, y: 0, duration: 1.8, ease: 'power3.in' }, 4.5);
+          tl.to(scene.fog!, { density: 0.12, duration: 2.0, ease: 'power3.in' }, 3.5);
+          tl.call(() => { rimLight.color.set(0x00E676); }, [], 3.5);
+        } else if (dayType === 'friday') {
+          // FRIDAY: Arms day → zoom into right arm
+          tl.call(() => setPhase('zoom'), [], 3.5);
+          tl.to(model.rotation, { y: Math.PI * 0.3, duration: 0.8, ease: 'power2.inOut' }, 3.5);
+          tl.to(camera.position, { z: 1.5, y: 0.0, x: 0.8, duration: 2.0, ease: 'power3.in' }, 3.8);
+          tl.to(camera.rotation, { x: 0.0, y: -0.3, duration: 2.0, ease: 'power3.in' }, 3.8);
+          tl.to(scene.fog!, { density: 0.15, duration: 2.0, ease: 'power3.in' }, 3.8);
+          tl.to(spotLight, { angle: Math.PI / 12, intensity: 6.0, duration: 2.0, ease: 'power3.in' }, 3.8);
+          tl.call(() => { rimLight.color.set(0xFFB300); }, [], 3.5);
+        } else if (dayType === 'saturday') {
+          // SATURDAY: Hamstrings/Calves/Abs → rotate to back legs, dive down
+          tl.call(() => setPhase('zoom'), [], 3.5);
+          tl.to(model.rotation, { y: Math.PI, duration: 1.0, ease: 'power2.inOut' }, 3.5);
+          tl.to(camera.position, { z: 1.2, y: -0.6, x: 0, duration: 2.0, ease: 'power3.in' }, 3.8);
+          tl.to(camera.rotation, { x: 0.3, y: 0, duration: 2.0, ease: 'power3.in' }, 3.8);
+          tl.to(scene.fog!, { density: 0.15, duration: 2.0, ease: 'power3.in' }, 3.8);
+          tl.to(spotLight, { angle: Math.PI / 12, intensity: 6.0, duration: 2.0, ease: 'power3.in' }, 3.8);
+          tl.call(() => { rimLight.color.set(0xFF1744); }, [], 3.5);
+        }
 
-        // Gentle fog increase as camera zooms in
-        tl.to(scene.fog!, {
-          density: 0.15,
-          duration: 1.8,
-          ease: 'power3.in',
-        }, 3.5);
-
-        // Spot light narrows to focus beam — stays bright
-        tl.to(spotLight, {
-          angle: Math.PI / 12,
-          intensity: 6.0,
-          duration: 1.8,
-          ease: 'power3.in',
-        }, 3.5);
-
-        // Phase 4: Screen wipe — overlay fades to black then clears
+        // === Phase 4: Screen wipe (5.5s → 6.5s) ===
         tl.call(() => {
           if (overlayRef.current) {
-            gsap.to(overlayRef.current, {
-              opacity: 1,
-              duration: 0.6,
-              ease: 'power2.in',
-            });
+            gsap.to(overlayRef.current, { opacity: 1, duration: 0.6, ease: 'power2.in' });
           }
-        }, [], 5.0);
+        }, [], 5.5);
 
         tl.call(() => {
           setPhase('done');
-          onComplete();
-        }, [], 5.8);
+          onCompleteRef.current();
+        }, [], 6.2);
 
-        // Particle animation loop
+        // ===== ANIMATION LOOP =====
         let animId: number;
         let time = 0;
-        const animateParticles = () => {
-          animId = requestAnimationFrame(animateParticles);
+        const animate = () => {
+          animId = requestAnimationFrame(animate);
           time += 0.016;
-          const posAttr = particleGeo.getAttribute('position') as THREE.BufferAttribute;
+
+          // Floating particles
+          const pPos = particleGeo.getAttribute('position') as THREE.BufferAttribute;
           for (let i = 0; i < particleCount; i++) {
-            posAttr.array[i * 3] += velocities[i * 3];
-            posAttr.array[i * 3 + 1] += velocities[i * 3 + 1];
-            posAttr.array[i * 3 + 2] += velocities[i * 3 + 2];
-            // Reset if too far
-            if (Math.abs(posAttr.array[i * 3 + 1]) > 3) {
-              posAttr.array[i * 3 + 1] = -3;
-            }
+            pPos.array[i * 3] += particleVelocities[i * 3];
+            pPos.array[i * 3 + 1] += particleVelocities[i * 3 + 1];
+            pPos.array[i * 3 + 2] += particleVelocities[i * 3 + 2];
+            if (pPos.array[i * 3 + 1] > 4) pPos.array[i * 3 + 1] = -4;
           }
-          posAttr.needsUpdate = true;
+          pPos.needsUpdate = true;
           particleMat.opacity = 0.3 + Math.sin(time * 2) * 0.2;
+
+          // Ring particles orbit
+          ringParticles.rotation.y += 0.003;
+          ringMat.opacity = 0.2 + Math.sin(time * 1.5) * 0.1;
+
+          // Ground glow pulse
+          groundGlow.scale.setScalar(1 + Math.sin(time * 2) * 0.1);
+          groundMat.opacity = 0.04 + Math.sin(time * 2) * 0.03;
+
+          // Light beam sway
+          lightBeam.rotation.z = Math.sin(time * 0.5) * 0.1;
+          beamMat.opacity = 0.02 + Math.sin(time * 1.5) * 0.02;
+
           renderer.render(scene, camera);
         };
-        animateParticles();
+        animate();
 
-        // Resize handler
+        // Resize
         const onResize = () => {
           const newW = container.clientWidth;
           camera.aspect = newW / h;
@@ -453,50 +474,67 @@ export default function CinematicIntro({
         };
       },
       (progress) => {
-        if (progress.total > 0) {
-          setLoadPercent(Math.round((progress.loaded / progress.total) * 100));
-        }
+        if (progress.total > 0) setLoadPercent(Math.round((progress.loaded / progress.total) * 100));
       },
       (error) => {
         console.error('CinematicIntro: Failed to load model:', error);
-        // Skip intro on error
-        onComplete();
+        onCompleteRef.current();
       },
     );
 
-    return () => {
-      cleanupRef.current?.();
-    };
-  }, [highlightMuscles, height, onComplete]);
+    return () => { cleanupRef.current?.(); };
+  }, [highlightMuscles, height]);
+
+  const dayType = getDayType();
+  const dayLabels: Record<string, string> = {
+    monday: 'CHEST • SHOULDERS • BICEPS',
+    tuesday: 'BACK • QUADS • ABS',
+    wednesday: 'REST DAY — RECHARGE',
+    thursday: 'CHEST • BACK • ABS',
+    friday: 'ARMS DAY — ISOLATE',
+    saturday: 'HAMSTRINGS • CALVES • ABS',
+    sunday: 'REST DAY — RECHARGE',
+  };
 
   return (
     <div className="relative w-full" style={{ height }}>
       <div ref={mountRef} className="w-full h-full rounded-xl overflow-hidden" />
 
-      {/* Loading state */}
+      {/* Loading */}
       {phase === 'loading' && (
         <div className="absolute inset-0 flex items-center justify-center rounded-xl" style={{ background: '#050508' }}>
           <div className="text-center">
             <div className="w-12 h-12 border-2 border-[#FF5E00] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
             <p className="text-xs font-medium" style={{ color: 'rgba(148,163,184,0.6)' }}>
-              Loading model... {loadPercent > 0 && `${loadPercent}%`}
+              Loading... {loadPercent > 0 && `${loadPercent}%`}
             </p>
           </div>
         </div>
       )}
 
-      {/* Phase indicators — subtle text */}
+      {/* Spin phase */}
       {phase === 'spin' && (
-        <div className="absolute bottom-4 left-0 right-0 text-center pointer-events-none">
-          <p className="text-xs font-semibold tracking-widest uppercase" style={{ color: 'rgba(255,94,0,0.6)' }}>
+        <div className="absolute bottom-6 left-0 right-0 text-center pointer-events-none">
+          <p className="text-[10px] font-bold tracking-[0.4em] uppercase" style={{ color: 'rgba(255,94,0,0.7)' }}>
             Analyzing physique...
           </p>
         </div>
       )}
+
+      {/* Highlight phase */}
       {phase === 'highlight' && (
-        <div className="absolute bottom-4 left-0 right-0 text-center pointer-events-none">
-          <p className="text-xs font-semibold tracking-widest uppercase" style={{ color: '#FF5E00' }}>
-            Today's focus • {highlightMuscles.join(' • ')}
+        <div className="absolute bottom-6 left-0 right-0 text-center pointer-events-none">
+          <p className="text-[11px] font-black tracking-[0.3em] uppercase" style={{ color: '#FF5E00', textShadow: '0 0 20px rgba(255,94,0,0.5)' }}>
+            {dayLabels[dayType] || 'TRAINING'}
+          </p>
+        </div>
+      )}
+
+      {/* Zoom phase */}
+      {phase === 'zoom' && (
+        <div className="absolute bottom-6 left-0 right-0 text-center pointer-events-none">
+          <p className="text-[11px] font-black tracking-[0.3em] uppercase" style={{ color: '#FF5E00', textShadow: '0 0 20px rgba(255,94,0,0.5)' }}>
+            {dayLabels[dayType] || 'TRAINING'}
           </p>
         </div>
       )}
