@@ -41,27 +41,9 @@ const MESH_MUSCLE_MAP: Record<number, { primary: string; secondary?: string }> =
   9: { primary: 'Back', secondary: 'Forearms' },       // Upper back
 };
 
-// Z-range → muscle mapping for vertex-level refinement
 // Z is height: -0.5 = feet, +0.5 = head
-const Z_MUSCLE_MAP = [
-  { minZ: 0.35, maxZ: 0.50, muscle: null },           // Head (neutral)
-  { minZ: 0.20, maxZ: 0.35, muscle: 'Shoulders' },    // Upper chest/shoulders
-  { minZ: 0.05, maxZ: 0.20, muscle: 'Chest' },        // Chest
-  { minZ: -0.10, maxZ: 0.05, muscle: 'Abs' },         // Abs/core
-  { minZ: -0.25, maxZ: -0.10, muscle: 'Quads' },      // Hips/quads
-  { minZ: -0.40, maxZ: -0.25, muscle: 'Hamstrings' }, // Thighs
-  { minZ: -0.50, maxZ: -0.40, muscle: 'Calves' },     // Calves/feet
-];
-
-const Z_BACK_MUSCLE_MAP = [
-  { minZ: 0.35, maxZ: 0.50, muscle: null },
-  { minZ: 0.20, maxZ: 0.35, muscle: 'Shoulders' },
-  { minZ: 0.05, maxZ: 0.20, muscle: 'Back' },
-  { minZ: -0.10, maxZ: 0.05, muscle: 'Back' },
-  { minZ: -0.25, maxZ: -0.10, muscle: 'Hamstrings' },
-  { minZ: -0.40, maxZ: -0.25, muscle: 'Hamstrings' },
-  { minZ: -0.50, maxZ: -0.40, muscle: 'Calves' },
-];
+// Used for vertex-level muscle refinement
+// (referenced inline below for readability)
 
 // Neutral color for untrained areas
 const NEUTRAL_COLOR = new THREE.Color(0x2a2e3d);
@@ -186,21 +168,21 @@ export default function BodyHeatmap3D({ muscleScores, height = 400 }: BodyHeatma
             // Legs refinement by Z
             if (meshMuscle.primary === 'Hamstrings') {
               if (z < -0.40) vertexMuscle = 'Calves';
-              else if (z < -0.25) vertexMuscle = isBack(y) ? 'Hamstrings' : 'Quads';
-              else if (z < -0.10) vertexMuscle = isBack(y) ? 'Hamstrings' : 'Quads';
+              else if (z < -0.25) vertexMuscle = checkIsBack(y) ? 'Hamstrings' : 'Quads';
+              else if (z < -0.10) vertexMuscle = checkIsBack(y) ? 'Hamstrings' : 'Quads';
             }
           }
 
-          const { color } = getMuscleColor(vertexMuscle);
-          colors[i * 3] = color.r;
-          colors[i * 3 + 1] = color.g;
-          colors[i * 3 + 2] = color.b;
+          const { color: vertexColor } = getMuscleColor(vertexMuscle);
+          colors[i * 3] = vertexColor.r;
+          colors[i * 3 + 1] = vertexColor.g;
+          colors[i * 3 + 2] = vertexColor.b;
         }
 
         geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
         // Use the PRIMARY mesh muscle for the material (for hover detection)
-        const { color, emissive, emissiveIntensity } = getMuscleColor(meshMuscle.primary);
+        const { emissive, emissiveIntensity } = getMuscleColor(meshMuscle.primary);
         const score = scoresMap.get(meshMuscle.primary);
 
         child.material = new THREE.MeshStandardMaterial({
@@ -503,6 +485,6 @@ export default function BodyHeatmap3D({ muscleScores, height = 400 }: BodyHeatma
   );
 }
 
-function isBack(y: number): boolean {
+function checkIsBack(y: number): boolean {
   return y < -0.02;
 }
