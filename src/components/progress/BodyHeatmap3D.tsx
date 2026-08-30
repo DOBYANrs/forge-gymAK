@@ -9,25 +9,49 @@ interface BodyHeatmap3DProps {
   height?: number;
 }
 
-/*
- * This model is Z-up (Blender export). Z = height (-0.5 feet, +0.5 head)
- * Y = front-back depth, X = left-right width.
- *
- * 10 meshes (anatomical layers):
- *   Mesh 0: Lower body structure (Z: -0.5 to 0.12, Y: centered)
- *   Mesh 1: Lower body structure (Z: -0.5 to 0.11, Y: centered)
- *   Mesh 2: Abs/organs (Z: -0.30 to 0.18, Y: front-biased)
- *   Mesh 3: Full anterior torso (Z: -0.50 to 0.49, Y: front)
- *   Mesh 4: Front-only muscles (Z: full, Y: 0.02 to 0.14)
- *   Mesh 5: Upper anterior (Z: -0.35 to 0.50, Y: front, lateral)
- *   Mesh 6: Full body outline (Z: full, Y: balanced)
- *   Mesh 7: Back-only muscles (Z: full, Y: -0.11 to -0.02)
- *   Mesh 8: Posterior muscles (Z: full, Y: -0.16 to -0.04)
- *   Mesh 9: Upper back (Z: -0.32 to 0.50, Y: -0.16 to -0.09)
- */
+// Node matrix: [1,0,0,0, 0,0,1,0, 0,-1,0,0, 0,0.498,0,1]
+// scene_X = raw_X
+// scene_Y = raw_Z + 0.498
+// scene_Z = -raw_Y
+//
+// In scene space: camera at (0, 0.5, 4) looking at origin
+// So scene_Z > 0 = toward camera = FRONT
+// scene_Z < 0 = away from camera = BACK
+//
+// raw_Y negative -> scene_Z positive -> FRONT
+// raw_Y positive -> scene_Z negative -> BACK
+// raw_Z positive -> scene_Y positive -> upper body
+// raw_Z negative -> scene_Y negative -> lower body
 
-// Neutral color for untrained areas
-const NEUTRAL_COLOR = new THREE.Color(0x2a2e3d);
+function transformVertex(x: number, y: number, z: number): [number, number, number] {
+  return [x, z + 0.498, -y];
+}
+
+function getSceneMuscle(sx: number, sy: number, sz: number): string | null {
+  const absX = Math.abs(sx);
+  const isFront = sz > 0;  // scene_Z > 0 = front (toward camera)
+
+  // Arms — far from center
+  if (absX > 0.055) {
+    if (sy > 0.56) return 'Shoulders';
+    if (sy > 0.46) return isFront ? 'Biceps' : 'Triceps';
+    if (sy > 0.34) return isFront ? 'Biceps' : 'Triceps';
+    return 'Forearms';
+  }
+
+  // Torso
+  if (sy > 0.60) return null;  // Head
+  if (sy > 0.56) return 'Shoulders';
+  if (sy > 0.52) return isFront ? 'Chest' : 'Back';
+  if (sy > 0.46) return isFront ? 'Abs' : 'Abs';
+  if (sy > 0.40) return isFront ? 'Abs' : 'Abs';
+
+  // Legs
+  if (sy > 0.15) return isFront ? 'Quads' : 'Hamstrings';
+  return 'Calves';
+}
+
+const NEUTRAL_COLOR = new THREE.Color(0x3a3e4d);
 
 export default function BodyHeatmap3D({ muscleScores, height = 400 }: BodyHeatmap3DProps) {
   const mountRef = useRef<HTMLDivElement>(null);
@@ -49,211 +73,56 @@ export default function BodyHeatmap3D({ muscleScores, height = 400 }: BodyHeatma
 
   const scoresMap = useMemo(() => {
     const map = new Map<string, MuscleScore>();
-    for (const s of muscleScores) {
-      map.set(s.muscle, s);
-    }
+    for (const s of muscleScores) map.set(s.muscle, s);
     return map;
   }, [muscleScores]);
 
-  /**
-   * Get the color for a muscle, using the tier system.
-   * Returns a vivid color with emissive for high-tier muscles.
-   */
-  function getMuscleColor(muscle: string | null): { color: THREE.Color; emissive: THREE.Color; emissiveIntensity: number } {
+  // Get tier color as THREE.Color
+  function getTierColor(muscle: string | null): { color: THREE.Color; emissive: THREE.Color; emissiveIntensity: number } {
     if (!muscle) return { color: NEUTRAL_COLOR.clone(), emissive: new THREE.Color(0x000000), emissiveIntensity: 0 };
-
     const score = scoresMap.get(muscle);
     if (!score || score.score === 0) {
       return { color: NEUTRAL_COLOR.clone(), emissive: new THREE.Color(0x111122), emissiveIntensity: 0.1 };
     }
-
     const tier = score.tier;
     const baseColor = new THREE.Color(tier.color);
-
-    // Make colors brighter and more vivid
-    const brightness = 0.15;
-    const brightColor = baseColor.clone().lerp(new THREE.Color(0xffffff), brightness);
-
-    // Emissive intensity scales with tier (Legendary = max glow)
+    const brightColor = baseColor.clone().lerp(new THREE.Color(0xffffff), 0.15);
     let emissiveStrength: number;
     switch (tier.name) {
-      case 'Legendary':    emissiveStrength = 1.8; break;
-      case 'Elite':        emissiveStrength = 1.4; break;
-      case 'Advanced':     emissiveStrength = 1.0; break;
+      case 'Legendary': emissiveStrength = 1.8; break;
+      case 'Elite': emissiveStrength = 1.4; break;
+      case 'Advanced': emissiveStrength = 1.0; break;
       case 'Intermediate': emissiveStrength = 0.7; break;
-      case 'Novice':       emissiveStrength = 0.5; break;
-      default:             emissiveStrength = 0.2;
+      case 'Novice': emissiveStrength = 0.5; break;
+      default: emissiveStrength = 0.2;
     }
-
     const emissive = baseColor.clone().multiplyScalar(emissiveStrength);
-
     return { color: brightColor, emissive, emissiveIntensity: emissiveStrength * 0.8 };
   }
-
-  /**
-   * Determine which muscle group a vertex belongs to based on its RAW 3D position.
-   *
-   * IMPORTANT: The GLB model has a node matrix that SWAPS axes:
-   *   Node matrix [1,0,0,0, 0,0,1,0, 0,-1,0,0, 0,0.498,0,1]
-   *   Means: rendered_Y = raw_Z, rendered_Z = -raw_Y
-   *
-   * So in raw vertex coordinates:
-   *   X: -0.081 to 0.083 (width — stays as X)
-   *   Y: -0.172 to 0.148 (raw Y → rendered as -Z = depth)
-   *   Z: -0.497 to 0.147 (raw Z → rendered as Y = HEIGHT)
-   *
-   * In the SCENE after transform:
-   *   scene_Y (up) = raw_Z  (so raw_Z > 0 = head, raw_Z < 0 = feet)
-   *   scene_Z (depth) = -raw_Y (so raw_Y > 0 = BACK, raw_Y < 0 = FRONT)
-   */
-  function getVertexMuscle3D(x: number, y: number, z: number): string | null {
-    const absX = Math.abs(x);
-    // After the node matrix: scene_depth = -raw_Y
-    // raw_Y > 0 → scene_Z negative → FRONT
-    // raw_Y < 0 → scene_Z positive → BACK
-    const isFront = y < 0;  // raw_Y negative = FRONT (verified: torso vertices have Y ≈ -0.14)
-    // After the node matrix: scene_height = raw_Z
-    // raw_Z > 0 → head end, raw_Z < 0 → feet end
-
-    // ===== ARMS (far from center on X: absX > 0.055) =====
-    if (absX > 0.055) {
-      if (z > 0.08) return 'Shoulders';          // Top of arm / shoulder
-      if (z > -0.02) return isFront ? 'Biceps' : 'Triceps';  // Upper arm
-      if (z > -0.15) return isFront ? 'Biceps' : 'Triceps';  // Mid arm
-      if (z > -0.30) return 'Forearms';           // Lower arm
-      return 'Forearms';                           // Wrist area
-    }
-
-    // ===== TORSO (absX < 0.055) =====
-    if (absX < 0.055) {
-      // Head/neck — raw_Z above 0.10
-      if (z > 0.10) return null;
-
-      // Shoulders / traps — raw_Z: 0.06 to 0.10
-      if (z > 0.06) return 'Shoulders';
-
-      // Upper torso — raw_Z: 0.02 to 0.06
-      if (z > 0.02) {
-        return isFront ? 'Chest' : 'Back';
-      }
-
-      // Mid torso — raw_Z: -0.04 to 0.02
-      if (z > -0.04) {
-        return isFront ? 'Abs' : 'Abs';
-      }
-
-      // Lower torso / hips — raw_Z: -0.10 to -0.04
-      if (z > -0.10) {
-        return isFront ? 'Abs' : 'Abs';
-      }
-    }
-
-    // ===== LEGS (raw_Z < -0.10) =====
-    if (z < -0.10) {
-      // Thighs — raw_Z: -0.10 to -0.35
-      if (z > -0.35) {
-        return isFront ? 'Quads' : 'Hamstrings';
-      }
-
-      // Lower thighs / knees — raw_Z: -0.35 to -0.42
-      if (z > -0.42) {
-        return isFront ? 'Quads' : 'Hamstrings';
-      }
-
-      // Calves / shins — raw_Z < -0.42
-      return 'Calves';
-    }
-
-    return null;
-  }
-
-  /**
-   * Apply colors to the model using PURE position-based vertex coloring.
-   * Every vertex is colored based on its 3D coordinates, not mesh index.
-   */
-  const applyColors = (model: THREE.Group) => {
-    model.traverse((child) => {
-      if (child instanceof THREE.Mesh && child.geometry) {
-        const geo = child.geometry;
-        const positions = geo.getAttribute('position') as THREE.BufferAttribute;
-        if (!positions) return;
-
-        // Create per-vertex colors
-        const colors = new Float32Array(positions.count * 3);
-        const primaryMuscleCounts = new Map<string, number>();
-
-        for (let i = 0; i < positions.count; i++) {
-          const x = positions.getX(i);
-          const y = positions.getY(i);
-          const z = positions.getZ(i);
-
-          const muscle = getVertexMuscle3D(x, y, z);
-          const { color: vertexColor } = getMuscleColor(muscle);
-
-          colors[i * 3] = vertexColor.r;
-          colors[i * 3 + 1] = vertexColor.g;
-          colors[i * 3 + 2] = vertexColor.b;
-
-          // Track most common muscle for hover detection
-          if (muscle) {
-            primaryMuscleCounts.set(muscle, (primaryMuscleCounts.get(muscle) || 0) + 1);
-          }
-        }
-
-        geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-
-        // Find dominant muscle for this mesh (for hover)
-        let dominantMuscle = '';
-        let maxCount = 0;
-        for (const [muscle, count] of primaryMuscleCounts) {
-          if (count > maxCount) { maxCount = count; dominantMuscle = muscle; }
-        }
-
-        const { emissive, emissiveIntensity } = getMuscleColor(dominantMuscle || null);
-        const score = scoresMap.get(dominantMuscle);
-
-        child.material = new THREE.MeshStandardMaterial({
-          vertexColors: true,
-          roughness: 0.3,
-          metalness: 0.1,
-          emissive,
-          emissiveIntensity,
-          transparent: false,
-          opacity: 1.0,
-          side: THREE.DoubleSide,
-        });
-
-        child.userData.muscleName = dominantMuscle || 'Body';
-        child.userData.score = score?.score ?? 0;
-        child.userData.tierName = score?.tier.name ?? 'None';
-        child.userData.tierColor = score?.tier.color ?? '#9CA3AF';
-      }
-    });
-  };
 
   useEffect(() => {
     if (!mountRef.current) return;
 
     const container = mountRef.current;
-    const width = container.clientWidth;
+    const w = container.clientWidth;
     const h = height;
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x0B0C10);
 
-    const camera = new THREE.PerspectiveCamera(40, width / h, 0.1, 100);
+    const camera = new THREE.PerspectiveCamera(40, w / h, 0.1, 100);
     camera.position.set(0, 0.5, 4);
     camera.lookAt(0, 0, 0);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    renderer.setSize(width, h);
+    renderer.setSize(w, h);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setClearColor(0x0B0C10, 1);
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 2.5;
     container.appendChild(renderer.domElement);
 
-    // VIVID lighting — bright enough to see tier colors clearly
+    // Lighting
     scene.add(new THREE.AmbientLight(0xffffff, 1.0));
 
     const keyLight = new THREE.DirectionalLight(0xffffff, 3.0);
@@ -276,7 +145,6 @@ export default function BodyHeatmap3D({ muscleScores, height = 400 }: BodyHeatma
     backLight.position.set(0, 0, -5);
     scene.add(backLight);
 
-    // Subtle ground
     const ground = new THREE.Mesh(
       new THREE.PlaneGeometry(10, 10),
       new THREE.MeshStandardMaterial({ color: 0x0a0a14, roughness: 0.9, metalness: 0.1, transparent: true, opacity: 0.3 }),
@@ -284,6 +152,48 @@ export default function BodyHeatmap3D({ muscleScores, height = 400 }: BodyHeatma
     ground.rotation.x = -Math.PI / 2;
     ground.position.y = -1.8;
     scene.add(ground);
+
+    /**
+     * PER-MESH COLORING: Each mesh gets a solid material based on its center position.
+     * This avoids vertex coloring issues entirely.
+     */
+    function applyMeshColors(group: THREE.Group) {
+      group.traverse((child) => {
+        if (child instanceof THREE.Mesh && child.geometry) {
+          const geo = child.geometry;
+          const pos = geo.getAttribute('position') as THREE.BufferAttribute;
+          if (!pos) return;
+
+          // Compute bounding box center
+          const box = new THREE.Box3().setFromBufferAttribute(pos);
+          const center = box.getCenter(new THREE.Vector3());
+
+          // Transform to scene space
+          const [sx, sy, sz] = transformVertex(center.x, center.y, center.z);
+
+          // Determine muscle
+          const muscle = getSceneMuscle(sx, sy, sz);
+          const { color, emissive, emissiveIntensity } = getTierColor(muscle);
+          const score = scoresMap.get(muscle || '');
+
+          child.material = new THREE.MeshStandardMaterial({
+            color,
+            roughness: 0.3,
+            metalness: 0.1,
+            emissive,
+            emissiveIntensity,
+            transparent: false,
+            opacity: 1,
+            side: THREE.DoubleSide,
+          });
+
+          child.userData.muscleName = muscle || 'Body';
+          child.userData.score = score?.score ?? 0;
+          child.userData.tierName = score?.tier.name ?? 'None';
+          child.userData.tierColor = score?.tier.color ?? '#3a3e4d';
+        }
+      });
+    }
 
     // Load GLB
     const loader = new GLTFLoader();
@@ -303,8 +213,8 @@ export default function BodyHeatmap3D({ muscleScores, height = 400 }: BodyHeatma
         model.position.sub(center.multiplyScalar(scale));
         model.position.y += 0.3;
 
-        // Apply per-mesh + vertex coloring
-        applyColors(model);
+        // Apply per-mesh solid colors
+        applyMeshColors(model);
         scene.add(model);
 
         const state = {
@@ -383,17 +293,17 @@ export default function BodyHeatmap3D({ muscleScores, height = 400 }: BodyHeatma
         let time = 0;
         const animate = () => {
           state.animationId = requestAnimationFrame(animate);
-          time += 0.004;
+          time += 0.016;
           if (!state.isDragging) model.rotation.y = Math.sin(time) * 0.4;
           renderer.render(scene, camera);
         };
         animate();
 
         const onResize = () => {
-          const w = container.clientWidth;
-          camera.aspect = w / h;
+          const newW = container.clientWidth;
+          camera.aspect = newW / h;
           camera.updateProjectionMatrix();
-          renderer.setSize(w, h);
+          renderer.setSize(newW, h);
         };
         window.addEventListener('resize', onResize);
 
@@ -434,14 +344,33 @@ export default function BodyHeatmap3D({ muscleScores, height = 400 }: BodyHeatma
   // Update colors when scores change
   useEffect(() => {
     if (!sceneRef.current) return;
-    applyColors(sceneRef.current.model);
+    sceneRef.current.model.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        const geo = child.geometry;
+        const pos = geo.getAttribute('position') as THREE.BufferAttribute;
+        if (!pos) return;
+        const box = new THREE.Box3().setFromBufferAttribute(pos);
+        const center = box.getCenter(new THREE.Vector3());
+        const [sx, sy, sz] = transformVertex(center.x, center.y, center.z);
+        const muscle = getSceneMuscle(sx, sy, sz);
+        const { color, emissive, emissiveIntensity } = getTierColor(muscle);
+        const score = scoresMap.get(muscle || '');
+
+        child.material = new THREE.MeshStandardMaterial({
+          color, roughness: 0.3, metalness: 0.1,
+          emissive, emissiveIntensity,
+          transparent: false, opacity: 1, side: THREE.DoubleSide,
+        });
+        child.userData.muscleName = muscle || 'Body';
+        child.userData.score = score?.score ?? 0;
+        child.userData.tierName = score?.tier.name ?? 'None';
+        child.userData.tierColor = score?.tier.color ?? '#3a3e4d';
+      }
+    });
   }, [scoresMap]);
 
-  // Build legend
   const scoredMuscles = useMemo(() => {
-    return muscleScores
-      .filter(s => s.score > 0)
-      .sort((a, b) => b.score - a.score);
+    return muscleScores.filter(s => s.score > 0).sort((a, b) => b.score - a.score);
   }, [muscleScores]);
 
   return (
@@ -459,25 +388,21 @@ export default function BodyHeatmap3D({ muscleScores, height = 400 }: BodyHeatma
         </div>
       )}
 
-      {/* Hover tooltip */}
       {hoveredMuscle && (
-        <div
-          className="absolute top-2 left-2 px-3 py-2 rounded-lg pointer-events-none z-10"
+        <div className="absolute top-2 left-2 px-3 py-2 rounded-lg pointer-events-none z-10"
           style={{
             background: 'var(--bg-surface-elevated)',
             border: `1px solid ${hoveredTierColor}`,
             boxShadow: `0 0 20px ${hoveredTierColor}60`,
-          }}
-        >
-          <p className="text-xs font-bold" style={{ color: hoveredTierColor }}>
-            {hoveredMuscle}
-          </p>
+          }}>
+          <p className="text-xs font-bold" style={{ color: hoveredTierColor }}>{hoveredMuscle}</p>
           <div className="flex items-center gap-2 mt-0.5">
             <span className="text-[10px] font-semibold" style={{ color: 'var(--text-muted)' }}>
               {hoveredScore.toLocaleString()} pts
             </span>
             {hoveredTier && (
-              <span className="text-[9px] px-1.5 py-0.5 rounded-full font-bold" style={{ background: `${hoveredTierColor}30`, color: hoveredTierColor }}>
+              <span className="text-[9px] px-1.5 py-0.5 rounded-full font-bold"
+                style={{ background: `${hoveredTierColor}30`, color: hoveredTierColor }}>
                 {hoveredTier}
               </span>
             )}
@@ -485,29 +410,23 @@ export default function BodyHeatmap3D({ muscleScores, height = 400 }: BodyHeatma
         </div>
       )}
 
-      {/* Muscle legend */}
       <div className="mt-3 grid grid-cols-5 gap-1.5">
         {scoredMuscles.map(s => {
           const tier = getTier(s.score);
           return (
-            <div
-              key={s.muscle}
-              className="text-center px-1 py-1.5 rounded-md"
-              style={{ background: `${tier.color}15`, border: `1px solid ${tier.color}30` }}
-            >
-              <div className="w-2.5 h-2.5 rounded-full mx-auto mb-0.5" style={{ background: tier.color, boxShadow: tier.cssGlow }} />
+            <div key={s.muscle} className="text-center px-1 py-1.5 rounded-md"
+              style={{ background: `${tier.color}15`, border: `1px solid ${tier.color}30` }}>
+              <div className="w-2.5 h-2.5 rounded-full mx-auto mb-0.5"
+                style={{ background: tier.color, boxShadow: tier.cssGlow }} />
               <p className="text-[9px] font-semibold" style={{ color: tier.color }}>{s.muscle}</p>
               <p className="text-[8px]" style={{ color: 'var(--text-muted)' }}>{tier.name}</p>
             </div>
           );
         })}
       </div>
-
       <p className="text-[10px] text-center mt-2" style={{ color: 'var(--text-muted)' }}>
         Drag to rotate · Hover muscles for details
       </p>
     </div>
   );
 }
-
-

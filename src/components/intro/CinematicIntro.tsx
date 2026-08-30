@@ -214,9 +214,7 @@ export default function CinematicIntro({
     groundGlow.position.y = -1.5;
     scene.add(groundGlow);
 
-    // ===== INTRO: Use original silver model, just brighten it =====
-    // The model keeps its original material (silver/gray)
-    // We only add emissive glow on highlighted muscles during the highlight phase
+    // ===== INTRO: Keep original GLB material, just add glow on highlighted muscles =====
     const applyIntroGlow = (group: THREE.Group, highlighted: Set<string>) => {
       group.traverse((child) => {
         if (child instanceof THREE.Mesh && child.geometry) {
@@ -237,22 +235,12 @@ export default function CinematicIntro({
           }
 
           const isHighlighted = dominantMuscle && highlighted.has(dominantMuscle);
-          const glowColor = isHighlighted ? HIGHLIGHT_COLOR : new THREE.Color(0x000000);
-          const glowIntensity = isHighlighted ? 0.8 : 0;
 
-          // Keep original material appearance — bright silver with optional orange glow
-          child.material = new THREE.MeshStandardMaterial({
-            color: new THREE.Color(0xcccccc),  // Bright silver
-            roughness: 0.35,
-            metalness: 0.2,
-            emissive: glowColor,
-            emissiveIntensity: glowIntensity,
-            transparent: false,
-            opacity: 1,
-            side: THREE.DoubleSide,
-          });
-
-          child.userData.muscleName = dominantMuscle || 'Body';
+          if (isHighlighted) {
+            // Only add emissive glow — keep original material color
+            child.material.emissive = HIGHLIGHT_COLOR;
+            child.material.emissiveIntensity = 0.8;
+          }
         }
       });
     };
@@ -274,17 +262,9 @@ export default function CinematicIntro({
         model.position.sub(center.multiplyScalar(scale));
         model.position.y += 0.3;
 
-        // Apply bright silver material to all meshes
-        model.traverse((child) => {
-          if (child instanceof THREE.Mesh) {
-            child.material = new THREE.MeshStandardMaterial({
-              color: new THREE.Color(0xcccccc),
-              roughness: 0.35,
-              metalness: 0.2,
-              side: THREE.DoubleSide,
-            });
-          }
-        });
+        // Keep original GLB material — just brighten lighting
+        // The GLB has its own material with baseColor [0.15, 0.16, 0.11]
+        // We rely on the bright lights (ambient 1.0, key 3.0, etc.) to illuminate it
 
         scene.add(model);
 
