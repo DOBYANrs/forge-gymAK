@@ -120,33 +120,37 @@ export default function CinematicIntro({
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setClearColor(0x050508, 1);
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 2.5;
+    renderer.toneMappingExposure = 3.0;
     container.appendChild(renderer.domElement);
 
-    // DRAMATIC lighting — dark at first, brightens during highlight
-    const ambientLight = new THREE.AmbientLight(0x111122, 0.3);
+    // BRIGHT lighting — model should be clearly visible from the start
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.5);
     scene.add(ambientLight);
 
-    const spotLight = new THREE.SpotLight(0xffffff, 2.0);
+    const spotLight = new THREE.SpotLight(0xffffff, 3.0);
     spotLight.position.set(2, 5, 4);
-    spotLight.angle = Math.PI / 6;
+    spotLight.angle = Math.PI / 5;
     spotLight.penumbra = 0.3;
     scene.add(spotLight);
 
-    const rimLight = new THREE.DirectionalLight(0xFF5E00, 0.8);
+    const rimLight = new THREE.DirectionalLight(0xFF5E00, 1.2);
     rimLight.position.set(-3, 2, -4);
     scene.add(rimLight);
 
-    const fillLight = new THREE.DirectionalLight(0x4488ff, 0.5);
+    const fillLight = new THREE.DirectionalLight(0x88aaff, 1.0);
     fillLight.position.set(-2, 3, 2);
     scene.add(fillLight);
 
-    const backLight = new THREE.DirectionalLight(0xffffff, 0.6);
+    const backLight = new THREE.DirectionalLight(0xffffff, 1.0);
     backLight.position.set(0, 0, -5);
     scene.add(backLight);
 
-    // Fog for cinematic depth
-    scene.fog = new THREE.FogExp2(0x050508, 0.15);
+    const topLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    topLight.position.set(0, 6, 0);
+    scene.add(topLight);
+
+    // Light fog for cinematic depth — not too heavy
+    scene.fog = new THREE.FogExp2(0x050508, 0.06);
 
     // Particle field — floating embers
     const particleCount = 200;
@@ -192,45 +196,73 @@ export default function CinematicIntro({
             const muscle = getVertexMuscle(x, y, z);
 
             if (isHighlightPhase && muscle && highlighted.has(muscle)) {
-              // This vertex belongs to a highlighted muscle — forge orange
+              // This vertex belongs to a highlighted muscle — BRIGHT tier color
               const score = scoreMap.current.get(muscle);
               const tierColor = score?.tier.color
                 ? TIER_COLORS[score.tier.name] ?? HIGHLIGHT_COLOR
                 : HIGHLIGHT_COLOR;
-
-              colors[i * 3] = tierColor.r;
-              colors[i * 3 + 1] = tierColor.g;
-              colors[i * 3 + 2] = tierColor.b;
+              // Boost brightness for highlighted muscles
+              const boost = 1.3;
+              colors[i * 3] = Math.min(1, tierColor.r * boost);
+              colors[i * 3 + 1] = Math.min(1, tierColor.g * boost);
+              colors[i * 3 + 2] = Math.min(1, tierColor.b * boost);
             } else if (muscle) {
-              // Known muscle but not highlighted — dim neutral
+              // Known muscle but not highlighted — visible neutral
               const score = scoreMap.current.get(muscle);
               if (score && score.score > 0) {
                 const c = TIER_COLORS[score.tier.name] ?? NEUTRAL_COLOR;
-                colors[i * 3] = c.r * 0.15;
-                colors[i * 3 + 1] = c.g * 0.15;
-                colors[i * 3 + 2] = c.b * 0.15;
+                // Much brighter — 45% of tier color
+                colors[i * 3] = c.r * 0.45;
+                colors[i * 3 + 1] = c.g * 0.45;
+                colors[i * 3 + 2] = c.b * 0.45;
               } else {
-                colors[i * 3] = 0.08;
-                colors[i * 3 + 1] = 0.08;
-                colors[i * 3 + 2] = 0.1;
+                // Visible dark gray — clearly see the body shape
+                colors[i * 3] = 0.22;
+                colors[i * 3 + 1] = 0.22;
+                colors[i * 3 + 2] = 0.26;
               }
             } else {
-              // Head or unknown — very dim
-              colors[i * 3] = 0.06;
-              colors[i * 3 + 1] = 0.06;
-              colors[i * 3 + 2] = 0.07;
+              // Head or unknown — visible but muted
+              colors[i * 3] = 0.18;
+              colors[i * 3 + 1] = 0.18;
+              colors[i * 3 + 2] = 0.20;
             }
           }
 
           geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
+          // Use the tier color for emissive glow on highlighted muscles
+          let emissiveColor = new THREE.Color(0x000000);
+          let emissiveStrength = 0;
+          if (isHighlightPhase) {
+            // Find the most common muscle in this mesh's vertices
+            const muscleCounts = new Map<string, number>();
+            for (let i = 0; i < pos.count; i++) {
+              const m = getVertexMuscle(pos.getX(i), pos.getY(i), pos.getZ(i));
+              if (m) muscleCounts.set(m, (muscleCounts.get(m) || 0) + 1);
+            }
+            let primaryMuscle = '';
+            let maxCount = 0;
+            for (const [muscle, count] of muscleCounts) {
+              if (count > maxCount) { maxCount = count; primaryMuscle = muscle; }
+            }
+            if (primaryMuscle && highlighted.has(primaryMuscle)) {
+              const score = scoreMap.current.get(primaryMuscle);
+              const baseColor = score?.tier.color
+                ? TIER_COLORS[score.tier.name] ?? HIGHLIGHT_COLOR
+                : HIGHLIGHT_COLOR;
+              emissiveColor = baseColor.clone();
+              emissiveStrength = 0.6;
+            }
+          }
+
           child.material = new THREE.MeshStandardMaterial({
             vertexColors: true,
-            roughness: 0.35,
-            metalness: 0.15,
-            emissive: new THREE.Color(0x000000),
-            emissiveIntensity: 0,
-            transparent: true,
+            roughness: 0.3,
+            metalness: 0.1,
+            emissive: emissiveColor,
+            emissiveIntensity: emissiveStrength,
+            transparent: false,
             opacity: 1,
             side: THREE.DoubleSide,
           });
@@ -271,15 +303,15 @@ export default function CinematicIntro({
           },
         });
 
-        // Phase 1: Scene brightens + model spins 360° (2.5 seconds)
+        // Phase 1: Scene brightens further + model spins 360° (2.5 seconds)
         tl.to(ambientLight, {
-          intensity: 0.8,
+          intensity: 2.0,
           duration: 2.5,
           ease: 'power2.inOut',
         }, 0);
 
         tl.to(spotLight, {
-          intensity: 3.5,
+          intensity: 4.5,
           duration: 2.5,
           ease: 'power2.inOut',
         }, 0);
@@ -303,13 +335,13 @@ export default function CinematicIntro({
           if (model) applyIntroColors(model, highlightSet, true);
         }, [], 2.5);
 
-        // Muscle glow pulse
+        // Muscle glow pulse — brighten all highlighted meshes
         tl.call(() => {
           if (!model) return;
           model.traverse((child) => {
             if (child instanceof THREE.Mesh && child.material instanceof THREE.MeshStandardMaterial) {
               gsap.to(child.material, {
-                emissiveIntensity: 0.8,
+                emissiveIntensity: 1.2,
                 duration: 0.8,
                 ease: 'power2.out',
               });
@@ -317,9 +349,9 @@ export default function CinematicIntro({
           });
         }, [], 2.5);
 
-        // Rim light pulses orange
+        // Rim light pulses brighter orange
         tl.to(rimLight, {
-          intensity: 2.0,
+          intensity: 2.5,
           duration: 0.8,
           ease: 'power2.out',
         }, 2.5);
@@ -348,17 +380,17 @@ export default function CinematicIntro({
           ease: 'power3.in',
         }, 3.5);
 
-        // Increase fog as camera zooms in
+        // Gentle fog increase as camera zooms in
         tl.to(scene.fog!, {
-          density: 0.8,
+          density: 0.15,
           duration: 1.8,
           ease: 'power3.in',
         }, 3.5);
 
-        // Spot light narrows to focus beam
+        // Spot light narrows to focus beam — stays bright
         tl.to(spotLight, {
           angle: Math.PI / 12,
-          intensity: 5.0,
+          intensity: 6.0,
           duration: 1.8,
           ease: 'power3.in',
         }, 3.5);
