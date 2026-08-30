@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { lazy, Suspense } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import AppShell from './components/layout/AppShell';
-import UserSelector from './components/UserSelector';
+import CharacterSelectPage from './pages/CharacterSelectPage';
 import { useUser } from './context/UserContext';
 import type { UserId } from './types';
 
@@ -35,7 +35,7 @@ function AppContent() {
   };
 
   if (showSelector) {
-    return <UserSelector onSelect={handleSelect} />;
+    return <CharacterSelectPage onSelect={handleSelect} />;
   }
 
   return (
