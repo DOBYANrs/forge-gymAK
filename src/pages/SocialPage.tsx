@@ -1,34 +1,24 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useUser } from '../context/UserContext';
 import ActivityFeed from '../components/social/ActivityFeed';
 import Leaderboard from '../components/social/Leaderboard';
 import PRBadges from '../components/progress/PRBadges';
 import MuscleHeatmap from '../components/progress/MuscleHeatmap';
 import { useWorkout } from '../context/WorkoutContext';
-import { formatDateKey } from '../utils/dates';
+import { calculateAllMuscleScores } from '../utils/muscleScoring';
 
 type Tab = 'feed' | 'leaderboard' | 'prs' | 'heatmap';
 
 export default function SocialPage() {
   const { activeUser } = useUser();
-  const { getDayWorkout } = useWorkout();
+  const { workoutData } = useWorkout();
   const [activeTab, setActiveTab] = useState<Tab>('feed');
 
-  // Get all exercises for heatmap (this week)
-  const today = new Date();
-  const allExercises = (() => {
-    const exercises: NonNullable<ReturnType<typeof getDayWorkout>>['exercises'] = [];
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(today);
-      d.setDate(today.getDate() - i);
-      const key = formatDateKey(d);
-      const day = getDayWorkout(activeUser, key);
-      if (day?.exercises) {
-        exercises.push(...day.exercises);
-      }
-    }
-    return exercises;
-  })();
+  // Compute lifetime muscle scores for heatmap
+  const muscleScores = useMemo(
+    () => calculateAllMuscleScores(workoutData, activeUser),
+    [workoutData, activeUser],
+  );
 
   const tabs: { key: Tab; label: string; icon: string }[] = [
     { key: 'feed', label: 'Feed', icon: '📋' },
@@ -80,21 +70,8 @@ export default function SocialPage() {
           <p className="text-xs font-semibold mb-3 text-center" style={{ color: 'var(--text-muted)' }}>
             This Week&apos;s Muscle Activation
           </p>
-          <MuscleHeatmap exercises={allExercises} />
-          <div className="flex justify-center gap-4 mt-3">
-            <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 rounded" style={{ background: 'rgba(255, 94, 0, 0.15)' }} />
-              <span className="text-[9px]" style={{ color: 'var(--text-muted)' }}>Low</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 rounded" style={{ background: 'rgba(255, 94, 0, 0.5)' }} />
-              <span className="text-[9px]" style={{ color: 'var(--text-muted)' }}>Medium</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 rounded" style={{ background: 'rgba(255, 94, 0, 0.85)', boxShadow: '0 0 6px rgba(255,94,0,0.3)' }} />
-              <span className="text-[9px]" style={{ color: 'var(--text-muted)' }}>High</span>
-            </div>
-          </div>
+          <MuscleHeatmap muscleScores={muscleScores} />
+
         </div>
       )}
     </div>

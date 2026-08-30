@@ -40,12 +40,12 @@ function getVertexMuscle(x: number, y: number, z: number): string | null {
 }
 
 const TIER_COLORS: Record<string, THREE.Color> = {
-  Beginner: new THREE.Color(0x4A4E5D),
-  Novice: new THREE.Color(0x00E676),
-  Intermediate: new THREE.Color(0x00E5FF),
-  Advanced: new THREE.Color(0xA855F7),
-  Elite: new THREE.Color(0xFFB300),
-  Legendary: new THREE.Color(0xFF1744),
+  Beginner: new THREE.Color(0x9CA3AF),
+  Novice: new THREE.Color(0xFACC15),
+  Intermediate: new THREE.Color(0x38BDF8),
+  Advanced: new THREE.Color(0x3B82F6),
+  Elite: new THREE.Color(0xF97316),
+  Legendary: new THREE.Color(0xEF4444),
 };
 
 const HIGHLIGHT_COLOR = new THREE.Color(0xFF5E00);

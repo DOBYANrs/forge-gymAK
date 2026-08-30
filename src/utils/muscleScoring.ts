@@ -48,12 +48,12 @@ export interface TierInfo {
 }
 
 export const TIERS: TierInfo[] = [
-  { name: 'Beginner',     minScore: 0,    color: '#4A4E5D', glow: 'None',                  cssGlow: 'none' },
-  { name: 'Novice',       minScore: 250,  color: '#00E676', glow: 'Soft Green Glow',       cssGlow: '0 0 12px rgba(0,230,118,0.4)' },
-  { name: 'Intermediate', minScore: 500,  color: '#00E5FF', glow: 'Cyan Glow',             cssGlow: '0 0 14px rgba(0,229,255,0.4)' },
-  { name: 'Advanced',     minScore: 1000, color: '#A855F7', glow: 'Violet Pulse',          cssGlow: '0 0 16px rgba(168,85,247,0.5)' },
-  { name: 'Elite',        minScore: 2000, color: '#FFB300', glow: 'Gold Aura',             cssGlow: '0 0 18px rgba(255,179,0,0.5)' },
-  { name: 'Legendary',    minScore: 4000, color: '#FF1744', glow: 'Red Particle Glow',     cssGlow: '0 0 20px rgba(255,23,68,0.6)' },
+  { name: 'Beginner',     minScore: 0,    color: '#9CA3AF', glow: 'None',                  cssGlow: 'none' },
+  { name: 'Novice',       minScore: 250,  color: '#FACC15', glow: 'Soft Yellow Glow',      cssGlow: '0 0 12px rgba(250,204,21,0.4)' },
+  { name: 'Intermediate', minScore: 500,  color: '#38BDF8', glow: 'Sky Blue Glow',         cssGlow: '0 0 14px rgba(56,189,248,0.4)' },
+  { name: 'Advanced',     minScore: 1000, color: '#3B82F6', glow: 'Blue Pulse',            cssGlow: '0 0 16px rgba(59,130,246,0.5)' },
+  { name: 'Elite',        minScore: 2000, color: '#F97316', glow: 'Fiery Orange Aura',     cssGlow: '0 0 18px rgba(249,115,22,0.5)' },
+  { name: 'Legendary',    minScore: 4000, color: '#EF4444', glow: 'Red Particle Glow',     cssGlow: '0 0 20px rgba(239,68,68,0.6)' },
 ];
 
 export function getTier(score: number): TierInfo {
