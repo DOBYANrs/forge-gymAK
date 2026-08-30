@@ -9,62 +9,62 @@ interface BodyHeatmap3DProps {
   height?: number;
 }
 
-/**
+/*
  * This model is Z-up (Blender export). Z = height (-0.5 feet, +0.5 head)
  * Y = front-back depth, X = left-right width.
  *
- * We color vertices based on their Z (height) position:
- * Map Z ranges to muscle groups, then color by tier score.
+ * 10 meshes (anatomical layers):
+ *   Mesh 0: Lower body structure (Z: -0.5 to 0.12, Y: centered)
+ *   Mesh 1: Lower body structure (Z: -0.5 to 0.11, Y: centered)
+ *   Mesh 2: Abs/organs (Z: -0.30 to 0.18, Y: front-biased)
+ *   Mesh 3: Full anterior torso (Z: -0.50 to 0.49, Y: front)
+ *   Mesh 4: Front-only muscles (Z: full, Y: 0.02 to 0.14)
+ *   Mesh 5: Upper anterior (Z: -0.35 to 0.50, Y: front, lateral)
+ *   Mesh 6: Full body outline (Z: full, Y: balanced)
+ *   Mesh 7: Back-only muscles (Z: full, Y: -0.11 to -0.02)
+ *   Mesh 8: Posterior muscles (Z: full, Y: -0.16 to -0.04)
+ *   Mesh 9: Upper back (Z: -0.32 to 0.50, Y: -0.16 to -0.09)
  */
 
-// Z-range → muscle group mapping (model coords: Z = -0.5 feet to +0.5 head)
-// Using the FRONT face (positive Y) and BACK face (negative Y) for different muscles
-const Z_RANGES = [
-  { minZ: 0.35, maxZ: 0.50, muscle: 'Head', primary: null },
-  { minZ: 0.20, maxZ: 0.35, muscle: 'Shoulders', primary: 'Shoulders' },
-  { minZ: 0.05, maxZ: 0.20, muscle: 'Chest', primary: 'Chest' },
-  { minZ: -0.10, maxZ: 0.05, muscle: 'Abs', primary: 'Abs' },
-  { minZ: -0.25, maxZ: -0.10, muscle: 'Quads/Hips', primary: 'Quads' },
-  { minZ: -0.40, maxZ: -0.25, muscle: 'Thighs', primary: 'Hamstrings' },
-  { minZ: -0.50, maxZ: -0.40, muscle: 'Calves/Feet', primary: 'Calves' },
+// Maps each mesh to its dominant muscle group(s)
+// Based on actual bounding box analysis of the GLB model
+const MESH_MUSCLE_MAP: Record<number, { primary: string; secondary?: string }> = {
+  0: { primary: 'Hamstrings', secondary: 'Calves' },   // Lower back/legs
+  1: { primary: 'Hamstrings', secondary: 'Calves' },   // Lower back/legs (other side)
+  2: { primary: 'Abs', secondary: 'Core' },            // Abs region
+  3: { primary: 'Chest' },                             // Front torso
+  4: { primary: 'Chest', secondary: 'Shoulders' },     // Front muscles
+  5: { primary: 'Shoulders', secondary: 'Biceps' },    // Upper front lateral
+  6: { primary: 'Back', secondary: 'Chest' },          // Full body center
+  7: { primary: 'Back', secondary: 'Triceps' },        // Back muscles
+  8: { primary: 'Back', secondary: 'Hamstrings' },     // Posterior chain
+  9: { primary: 'Back', secondary: 'Forearms' },       // Upper back
+};
+
+// Z-range → muscle mapping for vertex-level refinement
+// Z is height: -0.5 = feet, +0.5 = head
+const Z_MUSCLE_MAP = [
+  { minZ: 0.35, maxZ: 0.50, muscle: null },           // Head (neutral)
+  { minZ: 0.20, maxZ: 0.35, muscle: 'Shoulders' },    // Upper chest/shoulders
+  { minZ: 0.05, maxZ: 0.20, muscle: 'Chest' },        // Chest
+  { minZ: -0.10, maxZ: 0.05, muscle: 'Abs' },         // Abs/core
+  { minZ: -0.25, maxZ: -0.10, muscle: 'Quads' },      // Hips/quads
+  { minZ: -0.40, maxZ: -0.25, muscle: 'Hamstrings' }, // Thighs
+  { minZ: -0.50, maxZ: -0.40, muscle: 'Calves' },     // Calves/feet
 ];
 
-// Back-side overrides (when Y < 0, use back muscles instead)
-const Z_RANGES_BACK = [
-  { minZ: 0.35, maxZ: 0.50, muscle: 'Head', primary: null },
-  { minZ: 0.20, maxZ: 0.35, muscle: 'Rear Delts', primary: 'Shoulders' },
-  { minZ: 0.05, maxZ: 0.20, muscle: 'Back', primary: 'Back' },
-  { minZ: -0.10, maxZ: 0.05, muscle: 'Lower Back', primary: 'Back' },
-  { minZ: -0.25, maxZ: -0.10, muscle: 'Glutes', primary: 'Hamstrings' },
-  { minZ: -0.40, maxZ: -0.25, muscle: 'Hamstrings', primary: 'Hamstrings' },
-  { minZ: -0.50, maxZ: -0.40, muscle: 'Calves', primary: 'Calves' },
+const Z_BACK_MUSCLE_MAP = [
+  { minZ: 0.35, maxZ: 0.50, muscle: null },
+  { minZ: 0.20, maxZ: 0.35, muscle: 'Shoulders' },
+  { minZ: 0.05, maxZ: 0.20, muscle: 'Back' },
+  { minZ: -0.10, maxZ: 0.05, muscle: 'Back' },
+  { minZ: -0.25, maxZ: -0.10, muscle: 'Hamstrings' },
+  { minZ: -0.40, maxZ: -0.25, muscle: 'Hamstrings' },
+  { minZ: -0.50, maxZ: -0.40, muscle: 'Calves' },
 ];
 
-// Side overrides for arms (when |X| > threshold, map to arms)
-function getArmMuscle(z: number): string | null {
-  if (z > 0.05 && z < 0.30) return 'Biceps';
-  if (z > -0.10 && z < 0.05) return 'Triceps';
-  if (z < -0.10 && z > -0.30) return 'Forearms';
-  return null;
-}
-
-function getMuscleForVertex(x: number, y: number, z: number): string | null {
-  // Arms (far from center on X axis)
-  const armMuscle = getArmMuscle(z);
-  if (armMuscle && Math.abs(x) > 0.06) return armMuscle;
-
-  // Use Y to determine front vs back
-  const isFront = y > 0;
-  const ranges = isFront ? Z_RANGES : Z_RANGES_BACK;
-
-  for (const range of ranges) {
-    if (z >= range.minZ && z < range.maxZ) {
-      return range.primary;
-    }
-  }
-  return null;
-}
-
+// Neutral color for untrained areas
+const NEUTRAL_COLOR = new THREE.Color(0x2a2e3d);
 
 export default function BodyHeatmap3D({ muscleScores, height = 400 }: BodyHeatmap3DProps) {
   const mountRef = useRef<HTMLDivElement>(null);
@@ -93,25 +93,70 @@ export default function BodyHeatmap3D({ muscleScores, height = 400 }: BodyHeatma
   }, [muscleScores]);
 
   /**
-   * Color vertices based on their Z (height) position in the model.
-   * Each vertex gets colored by the muscle group it belongs to.
+   * Get the color for a muscle, using the tier system.
+   * Returns a vivid color with emissive for high-tier muscles.
    */
-  const applyVertexColors = (model: THREE.Group) => {
+  function getMuscleColor(muscle: string | null): { color: THREE.Color; emissive: THREE.Color; emissiveIntensity: number } {
+    if (!muscle) return { color: NEUTRAL_COLOR.clone(), emissive: new THREE.Color(0x000000), emissiveIntensity: 0 };
+
+    const score = scoresMap.get(muscle);
+    if (!score || score.score === 0) {
+      return { color: NEUTRAL_COLOR.clone(), emissive: new THREE.Color(0x111122), emissiveIntensity: 0.1 };
+    }
+
+    const tier = score.tier;
+    const baseColor = new THREE.Color(tier.color);
+
+    // Make colors brighter and more vivid
+    const brightness = 0.15;
+    const brightColor = baseColor.clone().lerp(new THREE.Color(0xffffff), brightness);
+
+    // Emissive intensity scales with tier (Legendary = max glow)
+    let emissiveStrength: number;
+    switch (tier.name) {
+      case 'Legendary':    emissiveStrength = 1.8; break;
+      case 'Elite':        emissiveStrength = 1.4; break;
+      case 'Advanced':     emissiveStrength = 1.0; break;
+      case 'Intermediate': emissiveStrength = 0.7; break;
+      case 'Novice':       emissiveStrength = 0.5; break;
+      default:             emissiveStrength = 0.2;
+    }
+
+    const emissive = baseColor.clone().multiplyScalar(emissiveStrength);
+
+    return { color: brightColor, emissive, emissiveIntensity: emissiveStrength * 0.8 };
+  }
+
+  /**
+   * Apply colors to the model.
+   * Strategy: color each mesh based on its primary muscle group,
+   * with vertex-level refinement for arms/legs distinction.
+   */
+  const applyColors = (model: THREE.Group) => {
+    let meshIndex = 0;
+
     model.traverse((child) => {
       if (child instanceof THREE.Mesh && child.geometry) {
+        const meshMuscle = MESH_MUSCLE_MAP[meshIndex];
         const geo = child.geometry;
         const positions = geo.getAttribute('position') as THREE.BufferAttribute;
-        if (!positions) return;
 
-        // Determine if this is a front or back mesh based on average Y
-        let avgY = 0;
-        for (let i = 0; i < positions.count; i++) {
-          avgY += positions.getY(i);
+        if (!meshMuscle || !positions) {
+          // Unknown mesh — neutral
+          child.material = new THREE.MeshStandardMaterial({
+            color: NEUTRAL_COLOR,
+            roughness: 0.5,
+            metalness: 0.1,
+          });
+          child.userData.muscleName = 'Body';
+          child.userData.score = 0;
+          child.userData.tierName = 'None';
+          child.userData.tierColor = '#4A4E5D';
+          meshIndex++;
+          return;
         }
-        avgY /= positions.count;
-        const isFrontMesh = avgY > 0;
 
-        // Create vertex colors
+        // Create per-vertex colors for fine-grained muscle mapping
         const colors = new Float32Array(positions.count * 3);
 
         for (let i = 0; i < positions.count; i++) {
@@ -119,40 +164,62 @@ export default function BodyHeatmap3D({ muscleScores, height = 400 }: BodyHeatma
           const y = positions.getY(i);
           const z = positions.getZ(i);
 
-          const muscle = getMuscleForVertex(x, y, z);
-          const score = muscle ? scoresMap.get(muscle) : undefined;
+          // Determine muscle for this vertex
+          let vertexMuscle = meshMuscle.primary;
 
-          if (score && score.score > 0) {
-            const baseColor = new THREE.Color(score.tier.color);
-            // Brighten the color
-            const brightColor = baseColor.clone().lerp(new THREE.Color(0xffffff), 0.15);
-            colors[i * 3] = brightColor.r;
-            colors[i * 3 + 1] = brightColor.g;
-            colors[i * 3 + 2] = brightColor.b;
-          } else {
-            // Default: subtle body color that shows the anatomy
-            colors[i * 3] = 0.22;
-            colors[i * 3 + 1] = 0.24;
-            colors[i * 3 + 2] = 0.30;
+          // Refine by position: arms on the sides
+          if (Math.abs(x) > 0.065) {
+            if (z > 0.05 && z < 0.30) vertexMuscle = 'Biceps';
+            else if (z > -0.10 && z < 0.05) vertexMuscle = 'Triceps';
+            else if (z < -0.10 && z > -0.30) vertexMuscle = 'Forearms';
           }
+
+          // Refine by front/back for torso muscles
+          if (Math.abs(x) < 0.065) {
+            const isBack = y < -0.02;
+            if (isBack && meshMuscle.primary === 'Chest') {
+              // Back side of a chest mesh → use Back
+              if (z > 0.05 && z < 0.20) vertexMuscle = 'Back';
+              else if (z > -0.10 && z < 0.05) vertexMuscle = 'Back';
+            }
+
+            // Legs refinement by Z
+            if (meshMuscle.primary === 'Hamstrings') {
+              if (z < -0.40) vertexMuscle = 'Calves';
+              else if (z < -0.25) vertexMuscle = isBack(y) ? 'Hamstrings' : 'Quads';
+              else if (z < -0.10) vertexMuscle = isBack(y) ? 'Hamstrings' : 'Quads';
+            }
+          }
+
+          const { color } = getMuscleColor(vertexMuscle);
+          colors[i * 3] = color.r;
+          colors[i * 3 + 1] = color.g;
+          colors[i * 3 + 2] = color.b;
         }
 
         geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
-        // Apply material with vertex colors
+        // Use the PRIMARY mesh muscle for the material (for hover detection)
+        const { color, emissive, emissiveIntensity } = getMuscleColor(meshMuscle.primary);
+        const score = scoresMap.get(meshMuscle.primary);
+
         child.material = new THREE.MeshStandardMaterial({
           vertexColors: true,
-          roughness: 0.35,
-          metalness: 0.1,
+          roughness: 0.3,
+          metalness: 0.15,
+          emissive,
+          emissiveIntensity,
           transparent: false,
           opacity: 1.0,
-          emissive: new THREE.Color(0x111122),
-          emissiveIntensity: 0.2,
+          side: THREE.DoubleSide,
         });
 
-        // Store metadata for hover detection
-        child.userData.muscleName = isFrontMesh ? 'Front' : 'Back';
-        child.userData.vertexPositions = positions;
+        child.userData.muscleName = meshMuscle.primary;
+        child.userData.score = score?.score ?? 0;
+        child.userData.tierName = score?.tier.name ?? 'None';
+        child.userData.tierColor = score?.tier.color ?? '#4A4E5D';
+
+        meshIndex++;
       }
     });
   };
@@ -176,37 +243,36 @@ export default function BodyHeatmap3D({ muscleScores, height = 400 }: BodyHeatma
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setClearColor(0x0B0C10, 1);
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 2.2;
+    renderer.toneMappingExposure = 2.5;
     container.appendChild(renderer.domElement);
 
-    // BRIGHT lighting for vivid colors
-    scene.add(new THREE.AmbientLight(0xffffff, 0.9));
+    // VIVID lighting — bright enough to see tier colors clearly
+    scene.add(new THREE.AmbientLight(0xffffff, 1.0));
 
-    const keyLight = new THREE.DirectionalLight(0xffffff, 2.5);
+    const keyLight = new THREE.DirectionalLight(0xffffff, 3.0);
     keyLight.position.set(3, 5, 5);
     scene.add(keyLight);
 
-    const fillLight = new THREE.DirectionalLight(0x88aaff, 1.2);
+    const fillLight = new THREE.DirectionalLight(0x88aaff, 1.5);
     fillLight.position.set(-4, 3, -2);
     scene.add(fillLight);
 
-    const rimLight = new THREE.DirectionalLight(0xff8844, 1.0);
+    const rimLight = new THREE.DirectionalLight(0xff8844, 1.2);
     rimLight.position.set(0, -2, -5);
     scene.add(rimLight);
 
-    const topLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    const topLight = new THREE.DirectionalLight(0xffffff, 1.0);
     topLight.position.set(0, 6, 0);
     scene.add(topLight);
 
-    // Back light to illuminate the back muscles
-    const backLight = new THREE.DirectionalLight(0xffffff, 0.6);
+    const backLight = new THREE.DirectionalLight(0xffffff, 0.8);
     backLight.position.set(0, 0, -5);
     scene.add(backLight);
 
-    // Ground
+    // Subtle ground
     const ground = new THREE.Mesh(
       new THREE.PlaneGeometry(10, 10),
-      new THREE.MeshStandardMaterial({ color: 0x0a0a14, roughness: 0.9, metalness: 0.1, transparent: true, opacity: 0.5 }),
+      new THREE.MeshStandardMaterial({ color: 0x0a0a14, roughness: 0.9, metalness: 0.1, transparent: true, opacity: 0.3 }),
     );
     ground.rotation.x = -Math.PI / 2;
     ground.position.y = -1.8;
@@ -230,8 +296,8 @@ export default function BodyHeatmap3D({ muscleScores, height = 400 }: BodyHeatma
         model.position.sub(center.multiplyScalar(scale));
         model.position.y += 0.3;
 
-        // Apply vertex-based coloring
-        applyVertexColors(model);
+        // Apply per-mesh + vertex coloring
+        applyColors(model);
         scene.add(model);
 
         const state = {
@@ -242,7 +308,7 @@ export default function BodyHeatmap3D({ muscleScores, height = 400 }: BodyHeatma
         sceneRef.current = state;
         setIsLoading(false);
 
-        // Interaction
+        // Mouse interaction
         const onMouseDown = (e: MouseEvent) => {
           state.isDragging = true;
           state.previousMousePosition = { x: e.clientX, y: e.clientY };
@@ -256,7 +322,7 @@ export default function BodyHeatmap3D({ muscleScores, height = 400 }: BodyHeatma
           model.rotation.x = Math.max(-0.8, Math.min(0.8, model.rotation.x));
           state.previousMousePosition = { x: e.clientX, y: e.clientY };
 
-          // Raycast for hover
+          // Hover detection
           const rect = renderer.domElement.getBoundingClientRect();
           const mouse = new THREE.Vector2(
             ((e.clientX - rect.left) / rect.width) * 2 - 1,
@@ -266,17 +332,12 @@ export default function BodyHeatmap3D({ muscleScores, height = 400 }: BodyHeatma
           raycaster.setFromCamera(mouse, camera);
           const intersects = raycaster.intersectObjects(model.children, true);
           if (intersects.length > 0) {
-            const hit = intersects[0];
-            const point = hit.point;
-            // Convert hit point back to model space
-            const modelPoint = model.worldToLocal(point.clone());
-            const muscle = getMuscleForVertex(modelPoint.x, modelPoint.y, modelPoint.z);
-            if (muscle) {
-              const score = scoresMap.get(muscle);
-              setHoveredMuscle(muscle);
-              setHoveredScore(score?.score ?? 0);
-              setHoveredTier(score?.tier.name ?? 'None');
-              setHoveredTierColor(score?.tier.color ?? '#4A4E5D');
+            const obj = intersects[0].object;
+            if (obj.userData.muscleName && obj.userData.muscleName !== 'Body') {
+              setHoveredMuscle(obj.userData.muscleName);
+              setHoveredScore(obj.userData.score);
+              setHoveredTier(obj.userData.tierName);
+              setHoveredTierColor(obj.userData.tierColor);
             } else {
               setHoveredMuscle('');
             }
@@ -363,13 +424,13 @@ export default function BodyHeatmap3D({ muscleScores, height = 400 }: BodyHeatma
     };
   }, [scoresMap, height]);
 
-  // Update vertex colors when scores change
+  // Update colors when scores change
   useEffect(() => {
     if (!sceneRef.current) return;
-    applyVertexColors(sceneRef.current.model);
+    applyColors(sceneRef.current.model);
   }, [scoresMap]);
 
-  // Build a legend of scored muscles
+  // Build legend
   const scoredMuscles = useMemo(() => {
     return muscleScores
       .filter(s => s.score > 0)
@@ -391,14 +452,14 @@ export default function BodyHeatmap3D({ muscleScores, height = 400 }: BodyHeatma
         </div>
       )}
 
-      {/* Hover tooltip with tier */}
+      {/* Hover tooltip */}
       {hoveredMuscle && (
         <div
           className="absolute top-2 left-2 px-3 py-2 rounded-lg pointer-events-none z-10"
           style={{
             background: 'var(--bg-surface-elevated)',
             border: `1px solid ${hoveredTierColor}`,
-            boxShadow: `0 0 20px ${hoveredTierColor}50`,
+            boxShadow: `0 0 20px ${hoveredTierColor}60`,
           }}
         >
           <p className="text-xs font-bold" style={{ color: hoveredTierColor }}>
@@ -417,7 +478,7 @@ export default function BodyHeatmap3D({ muscleScores, height = 400 }: BodyHeatma
         </div>
       )}
 
-      {/* Muscle legend - compact */}
+      {/* Muscle legend */}
       <div className="mt-3 grid grid-cols-5 gap-1.5">
         {scoredMuscles.map(s => {
           const tier = getTier(s.score);
@@ -440,4 +501,8 @@ export default function BodyHeatmap3D({ muscleScores, height = 400 }: BodyHeatma
       </p>
     </div>
   );
+}
+
+function isBack(y: number): boolean {
+  return y < -0.02;
 }
