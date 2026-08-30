@@ -26,25 +26,6 @@ interface BodyHeatmap3DProps {
  *   Mesh 9: Upper back (Z: -0.32 to 0.50, Y: -0.16 to -0.09)
  */
 
-// Maps each mesh to its dominant muscle group(s)
-// Based on actual bounding box analysis of the GLB model
-const MESH_MUSCLE_MAP: Record<number, { primary: string; secondary?: string }> = {
-  0: { primary: 'Hamstrings', secondary: 'Calves' },   // Lower back/legs
-  1: { primary: 'Hamstrings', secondary: 'Calves' },   // Lower back/legs (other side)
-  2: { primary: 'Abs', secondary: 'Core' },            // Abs region
-  3: { primary: 'Chest' },                             // Front torso
-  4: { primary: 'Chest', secondary: 'Shoulders' },     // Front muscles
-  5: { primary: 'Shoulders', secondary: 'Biceps' },    // Upper front lateral
-  6: { primary: 'Back', secondary: 'Chest' },          // Full body center
-  7: { primary: 'Back', secondary: 'Triceps' },        // Back muscles
-  8: { primary: 'Back', secondary: 'Hamstrings' },     // Posterior chain
-  9: { primary: 'Back', secondary: 'Forearms' },       // Upper back
-};
-
-// Z is height: -0.5 = feet, +0.5 = head
-// Used for vertex-level muscle refinement
-// (referenced inline below for readability)
-
 // Neutral color for untrained areas
 const NEUTRAL_COLOR = new THREE.Color(0x2a2e3d);
 
@@ -110,85 +91,121 @@ export default function BodyHeatmap3D({ muscleScores, height = 400 }: BodyHeatma
   }
 
   /**
-   * Apply colors to the model.
-   * Strategy: color each mesh based on its primary muscle group,
-   * with vertex-level refinement for arms/legs distinction.
+   * Determine which muscle group a vertex belongs to based PURELY on its 3D position.
+   * The model uses Z-up (Blender): Z = height (-0.5 feet, +0.5 head)
+   * Y = front-back depth (positive = front, negative = back)
+   * X = left-right width
+   */
+  function getVertexMuscle3D(x: number, y: number, z: number): string | null {
+    const absX = Math.abs(x);
+
+    // ===== ARMS (far from center on X axis) =====
+    if (absX > 0.06) {
+      if (z > 0.15 && z < 0.35) return 'Shoulders';  // Upper arm near shoulder
+      if (z > 0.0 && z < 0.15) return y > 0 ? 'Biceps' : 'Triceps';  // Upper arm
+      if (z > -0.15 && z < 0.0) return y > 0 ? 'Biceps' : 'Triceps';  // Mid arm
+      if (z < -0.15 && z > -0.35) return 'Forearms';  // Lower arm
+      return null;
+    }
+
+    // ===== TORSO (close to center) =====
+    if (absX < 0.06) {
+      const isFront = y > -0.01;
+
+      // Head/neck
+      if (z > 0.38) return null;
+
+      // Shoulders (top of torso, both front and back)
+      if (z > 0.25 && z < 0.38) return 'Shoulders';
+
+      // Upper torso
+      if (z > 0.08 && z < 0.25) {
+        return isFront ? 'Chest' : 'Back';
+      }
+
+      // Mid torso
+      if (z > -0.05 && z < 0.08) {
+        return isFront ? 'Abs' : 'Abs';  // Abs visible from front, lower back from back
+      }
+
+      // Lower torso / hips
+      if (z > -0.15 && z < -0.05) {
+        return isFront ? 'Abs' : 'Abs';
+      }
+    }
+
+    // ===== LEGS (lower body, moderate X) =====
+    if (absX < 0.08 && z < -0.15) {
+      const isBack = y < -0.01;
+
+      // Upper legs (thighs)
+      if (z > -0.15 && z < -0.30) {
+        return isBack ? 'Hamstrings' : 'Quads';
+      }
+
+      // Mid legs
+      if (z > -0.30 && z < -0.40) {
+        return isBack ? 'Hamstrings' : 'Quads';
+      }
+
+      // Lower legs (calves/shins)
+      if (z < -0.40) {
+        return 'Calves';
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Apply colors to the model using PURE position-based vertex coloring.
+   * Every vertex is colored based on its 3D coordinates, not mesh index.
    */
   const applyColors = (model: THREE.Group) => {
-    let meshIndex = 0;
-
     model.traverse((child) => {
       if (child instanceof THREE.Mesh && child.geometry) {
-        const meshMuscle = MESH_MUSCLE_MAP[meshIndex];
         const geo = child.geometry;
         const positions = geo.getAttribute('position') as THREE.BufferAttribute;
+        if (!positions) return;
 
-        if (!meshMuscle || !positions) {
-          // Unknown mesh — neutral
-          child.material = new THREE.MeshStandardMaterial({
-            color: NEUTRAL_COLOR,
-            roughness: 0.5,
-            metalness: 0.1,
-          });
-          child.userData.muscleName = 'Body';
-          child.userData.score = 0;
-          child.userData.tierName = 'None';
-          child.userData.tierColor = '#4A4E5D';
-          meshIndex++;
-          return;
-        }
-
-        // Create per-vertex colors for fine-grained muscle mapping
+        // Create per-vertex colors
         const colors = new Float32Array(positions.count * 3);
+        const primaryMuscleCounts = new Map<string, number>();
 
         for (let i = 0; i < positions.count; i++) {
           const x = positions.getX(i);
           const y = positions.getY(i);
           const z = positions.getZ(i);
 
-          // Determine muscle for this vertex
-          let vertexMuscle = meshMuscle.primary;
+          const muscle = getVertexMuscle3D(x, y, z);
+          const { color: vertexColor } = getMuscleColor(muscle);
 
-          // Refine by position: arms on the sides
-          if (Math.abs(x) > 0.065) {
-            if (z > 0.05 && z < 0.30) vertexMuscle = 'Biceps';
-            else if (z > -0.10 && z < 0.05) vertexMuscle = 'Triceps';
-            else if (z < -0.10 && z > -0.30) vertexMuscle = 'Forearms';
-          }
-
-          // Refine by front/back for torso muscles
-          if (Math.abs(x) < 0.065) {
-            const isBack = y < -0.02;
-            if (isBack && meshMuscle.primary === 'Chest') {
-              // Back side of a chest mesh → use Back
-              if (z > 0.05 && z < 0.20) vertexMuscle = 'Back';
-              else if (z > -0.10 && z < 0.05) vertexMuscle = 'Back';
-            }
-
-            // Legs refinement by Z
-            if (meshMuscle.primary === 'Hamstrings') {
-              if (z < -0.40) vertexMuscle = 'Calves';
-              else if (z < -0.25) vertexMuscle = checkIsBack(y) ? 'Hamstrings' : 'Quads';
-              else if (z < -0.10) vertexMuscle = checkIsBack(y) ? 'Hamstrings' : 'Quads';
-            }
-          }
-
-          const { color: vertexColor } = getMuscleColor(vertexMuscle);
           colors[i * 3] = vertexColor.r;
           colors[i * 3 + 1] = vertexColor.g;
           colors[i * 3 + 2] = vertexColor.b;
+
+          // Track most common muscle for hover detection
+          if (muscle) {
+            primaryMuscleCounts.set(muscle, (primaryMuscleCounts.get(muscle) || 0) + 1);
+          }
         }
 
         geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
-        // Use the PRIMARY mesh muscle for the material (for hover detection)
-        const { emissive, emissiveIntensity } = getMuscleColor(meshMuscle.primary);
-        const score = scoresMap.get(meshMuscle.primary);
+        // Find dominant muscle for this mesh (for hover)
+        let dominantMuscle = '';
+        let maxCount = 0;
+        for (const [muscle, count] of primaryMuscleCounts) {
+          if (count > maxCount) { maxCount = count; dominantMuscle = muscle; }
+        }
+
+        const { emissive, emissiveIntensity } = getMuscleColor(dominantMuscle || null);
+        const score = scoresMap.get(dominantMuscle);
 
         child.material = new THREE.MeshStandardMaterial({
           vertexColors: true,
           roughness: 0.3,
-          metalness: 0.15,
+          metalness: 0.1,
           emissive,
           emissiveIntensity,
           transparent: false,
@@ -196,12 +213,10 @@ export default function BodyHeatmap3D({ muscleScores, height = 400 }: BodyHeatma
           side: THREE.DoubleSide,
         });
 
-        child.userData.muscleName = meshMuscle.primary;
+        child.userData.muscleName = dominantMuscle || 'Body';
         child.userData.score = score?.score ?? 0;
         child.userData.tierName = score?.tier.name ?? 'None';
-        child.userData.tierColor = score?.tier.color ?? '#4A4E5D';
-
-        meshIndex++;
+        child.userData.tierColor = score?.tier.color ?? '#9CA3AF';
       }
     });
   };
@@ -485,6 +500,4 @@ export default function BodyHeatmap3D({ muscleScores, height = 400 }: BodyHeatma
   );
 }
 
-function checkIsBack(y: number): boolean {
-  return y < -0.02;
-}
+

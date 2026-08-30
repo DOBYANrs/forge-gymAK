@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import type { MuscleScore } from '../../utils/muscleScoring';
 import { getTier } from '../../utils/muscleScoring';
 
@@ -9,213 +9,203 @@ interface AnatomyBodyProps {
 }
 
 /**
- * Muscle segment definitions — anatomically correct SVG paths.
- * Each muscle group is a separate <path> with realistic body contours.
- * Front view muscles: Chest, Shoulders, Biceps, Abs, Quads, Forearms, Calves
- * Back view muscles: Back, Rear Delts, Triceps, Hamstrings, Calves, Forearms, Lower Back
+ * Realistic human anatomy SVG with:
+ * - Proper body outline using cubic bezier curves
+ * - Anatomically correct muscle group paths
+ * - Linear gradient shading for depth
+ * - Hover tooltips with muscle name + score + tier
+ * - Glow effects on active muscles
  */
 
-// ===== FRONT VIEW MUSCLES =====
-const FRONT_MUSCLES: Record<string, { path: string; label: string; cx: number; cy: number }> = {
+// Muted professional colors for muscle groups (not neon)
+const MUSCLE_FILL: Record<string, string> = {
+  Chest: '#8B6914',
+  Shoulders: '#5C6BC0',
+  Biceps: '#E65100',
+  Triceps: '#BF360C',
+  Abs: '#2E7D32',
+  Back: '#1565C0',
+  Forearms: '#6D4C41',
+  Quads: '#2E7D32',
+  Hamstrings: '#558B2F',
+  Calves: '#4E342E',
+  'Lower Back': '#37474F',
+};
+
+// --- FRONT VIEW ---
+// Realistic body outline — organic curves, not geometric
+const BODY_FRONT = `M60,8 C52,8 46,12 44,18 C42,22 42,26 44,30 L42,34 C38,36 30,38 24,42
+C18,46 14,52 12,58 C10,64 10,72 10,80 L8,86
+C6,92 6,100 8,108 L10,112 C8,118 6,130 6,140
+L6,158 C6,164 6,170 8,176 L8,192
+C8,196 10,200 14,200 L26,200 C28,200 30,198 30,194 L30,178
+C30,172 32,166 34,162 L44,162 C46,162 48,164 48,168 L48,178
+C48,184 50,190 52,194 L52,200 L60,200 L60,194
+C60,190 58,184 58,178 L58,168 C58,164 60,162 62,162
+L72,162 C74,166 76,172 76,178 L76,194
+C76,198 78,200 80,200 L92,200 C96,200 98,196 98,192
+L98,176 C100,170 102,164 102,158 L102,140
+C102,130 100,118 98,112 L100,108 C102,100 102,92 100,86
+L98,80 C98,72 98,64 96,58
+C94,52 90,46 84,42 C78,38 70,36 66,34 L64,30
+C66,26 66,22 64,18 C62,12 56,8 60,8 Z`;
+
+// Muscle paths — front view (anatomically correct shapes with curves)
+const FRONT_MUSCLES: Record<string, { path: string; cx: number; cy: number; label: string }> = {
   'Shoulders': {
-    // Left deltoid — rounded cap over shoulder joint
-    path: 'M32,52 C28,48 22,50 18,54 C16,58 18,64 22,66 C26,64 30,58 32,52 Z M88,52 C92,48 98,50 102,54 C104,58 102,64 98,66 C94,64 90,58 88,52 Z',
+    // Deltoid — rounded cap flowing from neck to upper arm
+    path: `M36,36 C30,36 24,38 20,42 C18,44 16,48 16,52 C16,56 18,60 22,62
+           C26,60 30,54 34,48 C36,44 36,40 36,36 Z
+           M84,36 C90,36 96,38 100,42 C102,44 104,48 104,52 C104,56 102,60 98,62
+           C94,60 90,54 86,48 C84,44 84,40 84,36 Z`,
+    cx: 22, cy: 52,
     label: 'Shoulders',
-    cx: 25, cy: 58,
   },
   'Chest': {
-    // Left pec — teardrop shape curving from shoulder to sternum
-    path: 'M34,54 C34,50 38,46 44,46 L58,46 C58,50 56,54 54,58 C50,64 44,66 38,64 C34,62 34,58 34,54 Z M66,54 C66,50 62,46 56,46 L50,46 C50,50 52,54 54,58 C58,64 64,66 70,64 C74,62 74,58 66,54 Z',
+    // Pectoralis major — teardrop flowing from collarbone to armpit
+    path: `M36,38 C36,36 40,34 46,34 L58,34 C58,36 58,38 58,40
+           C56,44 52,48 48,52 C44,56 40,58 36,58 C36,54 36,44 36,38 Z
+           M84,38 C84,36 80,34 74,34 L62,34 C62,36 62,38 62,40
+           C64,44 68,48 72,52 C76,56 80,58 84,58 C84,54 84,44 84,38 Z`,
+    cx: 48, cy: 48,
     label: 'Chest',
-    cx: 54, cy: 56,
   },
   'Biceps': {
-    // Left bicep — oval bulge on front of upper arm
-    path: 'M16,58 C14,58 12,62 12,68 C12,74 14,80 16,82 C18,80 20,74 20,68 C20,62 18,58 16,58 Z M104,58 C106,58 108,62 108,68 C108,74 106,80 104,82 C102,80 100,74 100,68 C100,62 102,58 104,58 Z',
+    // Biceps brachii — oval bulge on front of upper arm
+    path: `M18,54 C16,54 14,56 14,60 C14,66 14,72 16,76
+           C18,78 20,78 22,76 C24,72 24,66 24,60 C24,56 22,54 20,54 Z
+           M98,54 C100,54 102,56 102,60 C102,66 102,72 100,76
+           C98,78 96,78 94,76 C92,72 92,66 92,60 C92,56 94,54 96,54 Z`,
+    cx: 18, cy: 66,
     label: 'Biceps',
-    cx: 16, cy: 70,
   },
   'Abs': {
-    // Abdominal wall — rectus abdominis with segment lines
-    path: 'M46,68 C46,64 48,62 50,62 L58,62 C60,62 62,64 62,68 L62,96 C62,98 60,100 58,100 L50,100 C48,100 46,98 46,96 Z',
+    // Rectus abdominis — vertical strip with horizontal tendinous intersections
+    path: `M50,58 C50,56 52,54 54,54 L66,54 C68,54 70,56 70,58
+           L70,88 C70,90 68,92 66,92 L54,92 C52,92 50,90 50,88 Z`,
+    cx: 60, cy: 74,
     label: 'Abs',
-    cx: 54, cy: 82,
   },
   'Forearms': {
-    // Left forearm — tapered from elbow to wrist
-    path: 'M10,82 C8,84 8,90 8,96 C8,102 10,106 12,108 C14,106 16,102 16,96 C16,90 14,84 12,82 Z M100,82 C98,84 96,90 96,96 C96,102 98,106 100,108 C102,106 104,102 104,96 C104,90 102,84 100,82 Z',
+    // Brachioradialis — tapered from elbow to wrist
+    path: `M10,78 C8,80 8,86 8,92 C8,98 8,104 10,108
+           C12,106 14,100 14,94 C14,88 12,82 10,78 Z
+           M106,78 C108,80 108,86 108,92 C108,98 108,104 106,108
+           C104,106 102,100 102,94 C102,88 104,82 106,78 Z`,
+    cx: 10, cy: 94,
     label: 'Forearms',
-    cx: 12, cy: 96,
   },
   'Quads': {
-    // Left quad — large muscle group front of thigh
-    path: 'M36,104 C34,104 32,108 32,114 L32,144 C32,150 34,154 36,154 L48,154 C50,154 50,150 50,144 L50,114 C50,108 48,104 46,104 Z M70,104 C72,104 74,108 74,114 L74,144 C74,150 72,154 70,154 L58,154 C56,154 56,150 56,144 L56,114 C56,108 58,104 60,104 Z',
+    // Quadriceps — four-headed muscle, large mass on front of thigh
+    path: `M38,100 C36,100 34,104 34,110 L34,144 C34,148 36,152 38,152
+           L48,152 C50,152 50,148 50,144 L50,110 C50,104 48,100 46,100 Z
+           M78,100 C80,100 82,104 82,110 L82,144 C82,148 80,152 78,152
+           L68,152 C66,152 66,148 66,144 L66,110 C66,104 68,100 70,100 Z`,
+    cx: 42, cy: 128,
     label: 'Quads',
-    cx: 42, cy: 130,
   },
   'Calves': {
-    // Front shin — tibialis anterior
-    path: 'M38,158 C36,158 34,162 34,168 L34,186 C34,190 36,192 38,192 L46,192 C48,192 48,190 48,186 L48,168 C48,162 46,158 44,158 Z M72,158 C74,158 76,162 76,168 L76,186 C76,190 74,192 72,192 L64,192 C62,192 62,190 62,186 L62,168 C62,162 64,158 66,158 Z',
-    label: 'Calves',
+    // Tibialis anterior — front of lower leg
+    path: `M38,156 C36,156 34,160 34,166 L34,186 C34,190 36,192 38,192
+           L46,192 C48,192 48,190 48,186 L48,166 C48,160 46,156 44,156 Z
+           M78,156 C80,156 82,160 82,166 L82,186 C82,190 80,192 78,192
+           L70,192 C68,192 68,190 68,186 L68,166 C68,160 70,156 72,156 Z`,
     cx: 42, cy: 176,
+    label: 'Calves',
   },
 };
 
-// ===== BACK VIEW MUSCLES =====
-const BACK_MUSCLES: Record<string, { path: string; label: string; cx: number; cy: number }> = {
+// --- BACK VIEW ---
+const BACK_MUSCLES: Record<string, { path: string; cx: number; cy: number; label: string }> = {
   'Shoulders': {
-    // Rear delts — rounded shape on back of shoulders
-    path: 'M30,50 C26,48 20,50 18,54 C16,58 18,62 22,64 C26,62 30,56 30,50 Z M90,50 C94,48 100,50 102,54 C104,58 102,62 98,64 C94,62 90,56 90,50 Z',
+    // Rear deltoid — rounded on back of shoulder
+    path: `M34,34 C28,34 22,36 18,40 C16,44 16,48 18,52
+           C22,54 26,52 30,48 C34,44 36,40 36,36 Z
+           M86,34 C92,34 98,36 102,40 C104,44 104,48 102,52
+           C98,54 94,52 90,48 C86,44 84,40 84,36 Z`,
+    cx: 24, cy: 46,
     label: 'Rear Delts',
-    cx: 24, cy: 56,
   },
   'Back': {
-    // Trapezius + Lats — broad V-shape
-    path: 'M36,48 C36,44 40,42 46,42 L62,42 C68,42 72,44 72,48 L72,68 C72,72 70,76 66,78 L54,80 C50,80 46,78 44,76 L36,72 C36,68 36,52 36,48 Z M38,72 C38,70 40,68 44,68 L56,68 C58,68 60,70 60,72 L60,90 C60,92 58,94 56,94 L44,94 C42,94 40,92 40,90 Z',
+    // Trapezius + Latissimus dorsi — broad V-shape
+    path: `M38,36 C38,34 42,32 48,32 L72,32 C78,32 82,34 82,36
+           L82,52 C82,56 80,60 76,62 L64,66 C62,66 58,66 56,66
+           L44,62 C40,60 38,56 38,52 Z
+           M40,62 C40,60 42,58 46,58 L74,58 C78,58 80,60 80,62
+           L80,80 C80,84 78,86 74,86 L46,86 C42,86 40,84 40,80 Z`,
+    cx: 60, cy: 58,
     label: 'Back',
-    cx: 54, cy: 66,
   },
   'Triceps': {
-    // Left tricep — horseshoe shape on back of arm
-    path: 'M14,56 C12,56 10,60 10,66 C10,72 12,78 14,82 C16,78 18,72 18,66 C18,60 16,56 14,56 Z M106,56 C108,56 110,60 110,66 C110,72 108,78 106,82 C104,78 102,72 102,66 C102,60 104,56 106,56 Z',
+    // Triceps brachii — horseshoe shape on back of arm
+    path: `M14,52 C12,52 10,56 10,62 C10,68 10,74 12,78
+           C14,80 16,80 18,78 C20,74 20,68 20,62 C20,56 18,52 16,52 Z
+           M102,52 C104,52 106,56 106,62 C106,68 106,74 104,78
+           C102,80 100,80 98,78 C96,74 96,68 96,62 C96,56 98,52 100,52 Z`,
+    cx: 14, cy: 64,
     label: 'Triceps',
-    cx: 14, cy: 68,
   },
   'Forearms': {
-    path: 'M8,84 C6,86 6,92 6,98 C6,104 8,108 10,110 C12,108 14,104 14,98 C14,92 12,86 10,84 Z M102,84 C100,86 98,92 98,98 C98,104 100,108 102,110 C104,108 106,104 106,98 C106,92 104,86 102,84 Z',
+    path: `M8,80 C6,82 6,88 6,94 C6,100 6,106 8,110
+           C10,108 12,102 12,96 C12,90 10,84 8,80 Z
+           M104,80 C106,82 106,88 106,94 C106,100 106,106 104,110
+           C102,108 100,102 100,96 C100,90 102,84 104,80 Z`,
+    cx: 8, cy: 96,
     label: 'Forearms',
-    cx: 10, cy: 98,
   },
   'Hamstrings': {
-    // Back of thighs — two distinct muscles per leg
-    path: 'M34,104 C32,104 30,108 30,114 L30,144 C30,150 32,154 34,154 L48,154 C50,154 50,150 50,144 L50,114 C50,108 48,104 46,104 Z M72,104 C74,104 76,108 76,114 L76,144 C76,150 74,154 72,154 L58,154 C56,154 56,150 56,144 L56,114 C56,108 58,104 60,104 Z',
+    // Biceps femoris + semitendinosus — back of thigh
+    path: `M36,100 C34,100 32,104 32,110 L32,144 C32,148 34,152 36,152
+           L48,152 C50,152 50,148 50,144 L50,110 C50,104 48,100 46,100 Z
+           M80,100 C82,100 84,104 84,110 L84,144 C84,148 82,152 80,152
+           L68,152 C66,152 66,148 66,144 L66,110 C66,104 68,100 70,100 Z`,
+    cx: 40, cy: 128,
     label: 'Hamstrings',
-    cx: 40, cy: 130,
   },
   'Calves': {
-    // Gastrocnemius — diamond shape
-    path: 'M36,158 C34,158 32,162 32,168 C32,176 34,182 36,186 C38,182 40,176 40,168 C40,162 38,158 36,158 Z M74,158 C72,158 70,162 70,168 C70,176 72,182 74,186 C76,182 78,176 78,168 C78,162 76,158 74,158 Z',
+    // Gastrocnemius — diamond/bulge shape
+    path: `M36,156 C34,156 32,160 32,166 C32,174 34,180 36,184
+           C38,180 40,174 40,166 C40,160 38,156 36,156 Z
+           M80,156 C82,156 84,160 84,166 C84,174 82,180 80,184
+           C78,180 76,174 76,166 C76,160 78,156 80,156 Z`,
+    cx: 36, cy: 172,
     label: 'Calves',
-    cx: 36, cy: 174,
   },
   'Abs': {
-    // Lower back / erector spinae
-    path: 'M46,88 C46,84 48,82 50,82 L58,82 C60,82 62,84 62,88 L62,100 C62,102 60,104 58,104 L50,104 C48,104 46,102 46,100 Z',
+    // Lower back / Erector spinae
+    path: `M50,84 C50,82 52,80 54,80 L66,80 C68,80 70,82 70,84
+           L70,98 C70,100 68,102 66,102 L54,102 C52,102 50,100 50,98 Z`,
+    cx: 60, cy: 92,
     label: 'Lower Back',
-    cx: 54, cy: 93,
   },
 };
 
-// Body outline SVG paths
-const BODY_OUTLINE_FRONT = `
-  M54,4
-  C44,4 38,10 38,18
-  C38,24 42,30 48,32
-  L46,36 L32,42
-  C22,44 14,50 12,58
-  L10,84
-  C8,90 8,98 10,108
-  L12,112 L8,140
-  C6,150 6,160 8,170
-  L8,192
-  C8,196 12,198 16,198
-  L28,198
-  C32,198 34,196 34,192
-  L34,170
-  C34,162 36,156 38,154
-  L48,154
-  C50,154 52,156 52,160
-  L52,170
-  C52,176 54,180 56,182
-  L56,192
-  C56,196 58,198 60,198
-  L60,192
-  C60,180 58,176 56,170
-  L52,160
-  L52,154
-  L72,154
-  C74,154 76,156 78,160
-  L78,170
-  C78,176 76,180 74,192
-  L74,198
-  C74,198 78,198 82,198
-  L96,198
-  C100,198 104,196 104,192
-  L104,170
-  C104,160 104,150 102,140
-  L98,112 L100,108
-  C102,98 104,90 102,84
-  L100,58
-  C98,50 90,44 80,42
-  L68,36 L66,32
-  C72,30 76,24 76,18
-  C76,10 70,4 60,4
-  Z
-`;
-
-const BODY_OUTLINE_BACK = BODY_OUTLINE_FRONT; // Same outline for back
-
-function MuscleGroup({
-  path,
-  color,
-  emissiveIntensity,
-  label,
-  cx,
-  cy,
-  tierName,
-  score,
-}: {
-  path: string;
-  color: string;
-  emissiveIntensity: number;
-  label: string;
-  cx: number;
-  cy: number;
-  tierName: string;
-  score: number;
-}) {
-  const glowRadius = emissiveIntensity * 4;
-  const filterId = `glow-${label.replace(/\s/g, '')}`;
-
+// Gradient definitions for depth
+function MuscleGradients() {
   return (
-    <g>
-      {/* Glow filter */}
-      {emissiveIntensity > 0.3 && (
-        <defs>
-          <filter id={filterId} x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation={glowRadius} result="blur" />
-            <feMerge>
-              <feMergeNode in="blur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-        </defs>
-      )}
-      {/* Main muscle path */}
-      <path
-        d={path}
-        fill={color}
-        stroke={emissiveIntensity > 0.3 ? color : 'rgba(255,255,255,0.08)'}
-        strokeWidth={emissiveIntensity > 0.3 ? 0.8 : 0.3}
-        filter={emissiveIntensity > 0.3 ? `url(#${filterId})` : undefined}
-        style={{ transition: 'all 0.6s ease' }}
-        opacity={0.85 + emissiveIntensity * 0.15}
-      />
-      {/* Score label */}
-      {score > 0 && (
-        <>
-          <circle cx={cx} cy={cy} r={8} fill="rgba(0,0,0,0.5)" stroke={color} strokeWidth={0.5} />
-          <text x={cx} y={cy + 1} textAnchor="middle" dominantBaseline="middle" fontSize={5} fontWeight="bold" fill={color}>
-            {tierName.charAt(0)}
-          </text>
-        </>
-      )}
-    </g>
+    <defs>
+      {Object.entries(MUSCLE_FILL).map(([name, color]) => (
+        <linearGradient key={name} id={`grad-${name}`} x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor={color} stopOpacity={0.9} />
+          <stop offset="50%" stopColor={color} stopOpacity={1} />
+          <stop offset="100%" stopColor={color} stopOpacity={0.7} />
+        </linearGradient>
+      ))}
+      {/* Glow filter for active muscles */}
+      <filter id="muscle-glow" x="-30%" y="-30%" width="160%" height="160%">
+        <feGaussianBlur stdDeviation="3" result="blur" />
+        <feMerge>
+          <feMergeNode in="blur" />
+          <feMergeNode in="SourceGraphic" />
+        </feMerge>
+      </filter>
+    </defs>
   );
 }
 
 export default function AnatomyBody({ muscleScores, view, width = 140 }: AnatomyBodyProps) {
-  const height = width * (220 / 120);
+  const height = width * (210 / 120);
+  const [hovered, setHovered] = useState<string | null>(null);
 
   const scoresMap = useMemo(() => {
     const map = new Map<string, MuscleScore>();
@@ -226,50 +216,134 @@ export default function AnatomyBody({ muscleScores, view, width = 140 }: Anatomy
   const muscles = view === 'front' ? FRONT_MUSCLES : BACK_MUSCLES;
 
   return (
-    <div className="text-center">
+    <div className="text-center relative">
       <p className="text-[10px] font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--text-muted)' }}>
         {view === 'front' ? 'Front' : 'Back'}
       </p>
-      <svg viewBox="0 0 108 200" width={width} height={height} className="mx-auto">
-        {/* Body outline */}
+      <svg viewBox="0 0 120 210" width={width} height={height} className="mx-auto">
+        <MuscleGradients />
+
+        {/* Body outline — organic curves */}
         <path
-          d={view === 'front' ? BODY_OUTLINE_FRONT : BODY_OUTLINE_BACK}
+          d={BODY_FRONT}
           fill="rgba(255,255,255,0.02)"
-          stroke="rgba(255,255,255,0.08)"
-          strokeWidth="0.5"
+          stroke="rgba(255,255,255,0.1)"
+          strokeWidth="0.6"
         />
 
         {/* Head */}
-        <ellipse cx="54" cy="14" rx="12" ry="14" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.06)" strokeWidth="0.4" />
+        <ellipse cx="60" cy="14" rx="12" ry="14" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.06)" strokeWidth="0.4" />
 
         {/* Neck */}
-        <rect x="48" y="26" width="12" height="8" rx="3" fill="rgba(255,255,255,0.02)" />
+        <path d="M54,26 C54,24 56,22 60,22 C64,22 66,24 66,26 L66,34 L54,34 Z" fill="rgba(255,255,255,0.02)" />
 
         {/* Render each muscle group */}
         {Object.entries(muscles).map(([muscleName, def]) => {
           const score = scoresMap.get(muscleName);
           const tier = score?.tier ?? getTier(0);
           const hasData = score && score.score > 0;
+          const isHovered = hovered === muscleName;
+
+          // Determine fill — use gradient if active, dim if not
+          const fill = hasData ? `url(#grad-${muscleName})` : 'rgba(255,255,255,0.04)';
+          const strokeColor = hasData
+            ? tier.color
+            : 'rgba(255,255,255,0.06)';
+
+          // Tier-based opacity for depth
+          const fillOpacity = hasData ? Math.min(1, 0.5 + (score.score / 5000) * 0.5) : 0.3;
 
           return (
-            <MuscleGroup
-              key={`${view}-${muscleName}`}
-              path={def.path}
-              color={hasData ? tier.color : 'rgba(255,255,255,0.06)'}
-              emissiveIntensity={hasData ? Math.min(1, score.score / 4000) : 0}
-              label={def.label}
-              cx={def.cx}
-              cy={def.cy}
-              tierName={tier.name}
-              score={score?.score ?? 0}
-            />
+            <g key={`${view}-${muscleName}`}>
+              {/* Muscle path */}
+              <path
+                d={def.path}
+                fill={fill}
+                fillOpacity={fillOpacity}
+                stroke={isHovered ? '#fff' : strokeColor}
+                strokeWidth={isHovered ? 1.2 : hasData ? 0.6 : 0.3}
+                filter={hasData && score.score > 500 ? 'url(#muscle-glow)' : undefined}
+                style={{
+                  transition: 'all 0.4s ease',
+                  cursor: hasData ? 'pointer' : 'default',
+                }}
+                onMouseEnter={() => setHovered(muscleName)}
+                onMouseLeave={() => setHovered(null)}
+              />
+
+              {/* Tier indicator dot */}
+              {hasData && (
+                <circle
+                  cx={def.cx}
+                  cy={def.cy}
+                  r={5}
+                  fill="rgba(0,0,0,0.6)"
+                  stroke={tier.color}
+                  strokeWidth={0.8}
+                />
+              )}
+              {hasData && (
+                <text
+                  x={def.cx}
+                  y={def.cy + 0.5}
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  fontSize={4.5}
+                  fontWeight="bold"
+                  fill={tier.color}
+                  style={{ pointerEvents: 'none' }}
+                >
+                  {tier.name.charAt(0)}
+                </text>
+              )}
+            </g>
           );
         })}
 
         {/* Feet */}
-        <ellipse cx="42" cy="196" rx="8" ry="3" fill="rgba(255,255,255,0.02)" />
-        <ellipse cx="66" cy="196" rx="8" ry="3" fill="rgba(255,255,255,0.02)" />
+        <path d="M34,196 C34,198 36,200 40,200 L48,200 C50,200 50,198 50,196 Z" fill="rgba(255,255,255,0.02)" />
+        <path d="M66,196 C66,198 68,200 72,200 L80,200 C82,200 84,198 84,196 Z" fill="rgba(255,255,255,0.02)" />
       </svg>
+
+      {/* Hover tooltip */}
+      {hovered && (() => {
+        const score = scoresMap.get(hovered);
+        const tier = score?.tier ?? getTier(0);
+        const hasData = score && score.score > 0;
+        return (
+          <div
+            className="absolute top-0 left-1/2 -translate-x-1/2 px-3 py-2 rounded-lg pointer-events-none z-10"
+            style={{
+              background: 'var(--bg-surface-elevated)',
+              border: `1px solid ${hasData ? tier.color : 'rgba(255,255,255,0.1)'}`,
+              boxShadow: hasData ? `0 0 20px ${tier.color}40` : 'none',
+              minWidth: '100px',
+            }}
+          >
+            <p className="text-xs font-bold" style={{ color: hasData ? tier.color : 'var(--text-muted)' }}>
+              {hovered}
+            </p>
+            {hasData && (
+              <>
+                <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
+                  Score: {score.score.toLocaleString()}
+                </p>
+                <span
+                  className="text-[9px] px-1.5 py-0.5 rounded-full font-bold inline-block mt-0.5"
+                  style={{ background: `${tier.color}25`, color: tier.color }}
+                >
+                  {tier.name}
+                </span>
+              </>
+            )}
+            {!hasData && (
+              <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
+                No data yet
+              </p>
+            )}
+          </div>
+        );
+      })()}
     </div>
   );
 }
