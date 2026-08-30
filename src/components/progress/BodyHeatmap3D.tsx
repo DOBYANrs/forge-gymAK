@@ -92,64 +92,75 @@ export default function BodyHeatmap3D({ muscleScores, height = 400 }: BodyHeatma
 
   /**
    * Determine which muscle group a vertex belongs to based on its RAW 3D position.
-   * Actual GLB model dimensions (before scaling):
-   *   X: -0.081 to 0.083 (width)
-   *   Y: -0.172 to 0.148 (front-back depth)
-   *   Z: -0.497 to 0.147 (height: feet=head)
+   *
+   * IMPORTANT: The GLB model has a node matrix that SWAPS axes:
+   *   Node matrix [1,0,0,0, 0,0,1,0, 0,-1,0,0, 0,0.498,0,1]
+   *   Means: rendered_Y = raw_Z, rendered_Z = -raw_Y
+   *
+   * So in raw vertex coordinates:
+   *   X: -0.081 to 0.083 (width — stays as X)
+   *   Y: -0.172 to 0.148 (raw Y → rendered as -Z = depth)
+   *   Z: -0.497 to 0.147 (raw Z → rendered as Y = HEIGHT)
+   *
+   * In the SCENE after transform:
+   *   scene_Y (up) = raw_Z  (so raw_Z > 0 = head, raw_Z < 0 = feet)
+   *   scene_Z (depth) = -raw_Y (so raw_Y > 0 = BACK, raw_Y < 0 = FRONT)
    */
   function getVertexMuscle3D(x: number, y: number, z: number): string | null {
     const absX = Math.abs(x);
+    // After the node matrix: scene_depth = -raw_Y
+    // raw_Y > 0 → scene_Z negative → FRONT
+    // raw_Y < 0 → scene_Z positive → BACK
+    const isFront = y > 0;  // raw_Y positive = front of body
+    // After the node matrix: scene_height = raw_Z
+    // raw_Z > 0 → head end, raw_Z < 0 → feet end
 
     // ===== ARMS (far from center on X: absX > 0.055) =====
     if (absX > 0.055) {
-      if (z > 0.06) return 'Shoulders';         // Upper arm / shoulder
-      if (z > -0.05) return y > 0 ? 'Biceps' : 'Triceps';  // Upper-mid arm
-      if (z > -0.20) return y > 0 ? 'Biceps' : 'Triceps';  // Mid arm
-      if (z > -0.35) return 'Forearms';          // Lower arm
-      return 'Forearms';                          // Wrist/hand area
+      if (z > 0.08) return 'Shoulders';          // Top of arm / shoulder
+      if (z > -0.02) return isFront ? 'Biceps' : 'Triceps';  // Upper arm
+      if (z > -0.15) return isFront ? 'Biceps' : 'Triceps';  // Mid arm
+      if (z > -0.30) return 'Forearms';           // Lower arm
+      return 'Forearms';                           // Wrist area
     }
 
     // ===== TORSO (absX < 0.055) =====
     if (absX < 0.055) {
-      const isFront = y > -0.01;
-
-      // Head/neck — above 0.10
+      // Head/neck — raw_Z above 0.10
       if (z > 0.10) return null;
 
-      // Shoulders / traps — z: 0.06 to 0.10
+      // Shoulders / traps — raw_Z: 0.06 to 0.10
       if (z > 0.06) return 'Shoulders';
 
-      // Upper torso — z: 0.02 to 0.06
+      // Upper torso — raw_Z: 0.02 to 0.06
       if (z > 0.02) {
         return isFront ? 'Chest' : 'Back';
       }
 
-      // Mid torso — z: -0.04 to 0.02
+      // Mid torso — raw_Z: -0.04 to 0.02
       if (z > -0.04) {
         return isFront ? 'Abs' : 'Abs';
       }
 
-      // Lower torso / hips — z: -0.10 to -0.04
+      // Lower torso / hips — raw_Z: -0.10 to -0.04
       if (z > -0.10) {
         return isFront ? 'Abs' : 'Abs';
       }
     }
 
-    // ===== LEGS (z < -0.10) =====
+    // ===== LEGS (raw_Z < -0.10) =====
     if (z < -0.10) {
-      const isBack = y < -0.01;
-
-      // Thighs — z: -0.10 to -0.35
+      // Thighs — raw_Z: -0.10 to -0.35
       if (z > -0.35) {
-        return isBack ? 'Hamstrings' : 'Quads';
+        return isFront ? 'Quads' : 'Hamstrings';
       }
 
-      // Lower thighs / knees — z: -0.35 to -0.42
+      // Lower thighs / knees — raw_Z: -0.35 to -0.42
       if (z > -0.42) {
-        return isBack ? 'Hamstrings' : 'Quads';
+        return isFront ? 'Quads' : 'Hamstrings';
       }
 
-      // Calves / shins — z < -0.42
+      // Calves / shins — raw_Z < -0.42
       return 'Calves';
     }
 

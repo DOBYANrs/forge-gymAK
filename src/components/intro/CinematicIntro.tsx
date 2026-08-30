@@ -21,22 +21,45 @@ function getDayType(): string {
 }
 
 // Vertex → muscle mapping (Z = height, X = width, Y = front/back)
+/**
+ * Vertex → muscle mapping.
+ * GLB node matrix swaps axes: scene_Y=raw_Z, scene_Z=-raw_Y
+ * So raw_Z = height (head>0, feet<0), raw_Y>0 = front, raw_Y<0 = back
+ */
 function getVertexMuscle(x: number, y: number, z: number): string | null {
-  if (Math.abs(x) > 0.065) {
-    if (z > 0.05 && z < 0.30) return 'Biceps';
-    if (z > -0.10 && z < 0.05) return 'Triceps';
-    if (z < -0.10 && z > -0.30) return 'Forearms';
-    return null;
+  const absX = Math.abs(x);
+  const isFront = y > 0;  // raw_Y positive = front of body
+
+  // Arms — far from center
+  if (absX > 0.055) {
+    if (z > 0.08) return 'Shoulders';
+    if (z > -0.02) return isFront ? 'Biceps' : 'Triceps';
+    if (z > -0.15) return isFront ? 'Biceps' : 'Triceps';
+    if (z > -0.30) return 'Forearms';
+    return 'Forearms';
   }
-  const isBack = y < -0.02;
-  if (z > 0.35) return null;
-  if (z > 0.20 && z < 0.35) return 'Shoulders';
-  if (z > 0.05 && z < 0.20) return isBack ? 'Back' : 'Chest';
-  if (z > -0.10 && z < 0.05) return isBack ? 'Back' : 'Abs';
-  if (z > -0.25 && z < -0.10) return isBack ? 'Hamstrings' : 'Quads';
-  if (z > -0.40 && z < -0.25) return isBack ? 'Hamstrings' : 'Quads';
-  if (z > -0.50 && z < -0.40) return 'Calves';
-  return null;
+
+  // Head/neck
+  if (z > 0.10) return null;
+
+  // Shoulders
+  if (z > 0.06) return 'Shoulders';
+
+  // Upper torso
+  if (z > 0.02) return isFront ? 'Chest' : 'Back';
+
+  // Mid torso
+  if (z > -0.04) return isFront ? 'Abs' : 'Abs';
+
+  // Lower torso
+  if (z > -0.10) return isFront ? 'Abs' : 'Abs';
+
+  // Thighs
+  if (z > -0.35) return isFront ? 'Quads' : 'Hamstrings';
+  if (z > -0.42) return isFront ? 'Quads' : 'Hamstrings';
+
+  // Calves
+  return 'Calves';
 }
 
 const TIER_COLORS: Record<string, THREE.Color> = {
