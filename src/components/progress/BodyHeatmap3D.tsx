@@ -111,7 +111,7 @@ export default function BodyHeatmap3D({ muscleScores, height = 400 }: BodyHeatma
     // After the node matrix: scene_depth = -raw_Y
     // raw_Y > 0 → scene_Z negative → FRONT
     // raw_Y < 0 → scene_Z positive → BACK
-    const isFront = y > 0;  // raw_Y positive = front of body
+    const isFront = y < 0;  // raw_Y negative = FRONT (verified: torso vertices have Y ≈ -0.14)
     // After the node matrix: scene_height = raw_Z
     // raw_Z > 0 → head end, raw_Z < 0 → feet end
 

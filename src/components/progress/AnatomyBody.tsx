@@ -8,178 +8,163 @@ interface AnatomyBodyProps {
   width?: number;
 }
 
-// Professional muted muscle colors
-const MUSCLE_COLORS: Record<string, { base: string; dark: string }> = {
-  Chest:      { base: '#C62828', dark: '#8E1A1A' },
-  Shoulders:  { base: '#1565C0', dark: '#0D47A1' },
-  Biceps:     { base: '#E65100', dark: '#BF360C' },
-  Triceps:    { base: '#D84315', dark: '#A33000' },
-  Abs:        { base: '#2E7D32', dark: '#1B5E20' },
-  Back:       { base: '#0D47A1', dark: '#082E6B' },
-  Forearms:   { base: '#5D4037', dark: '#3E2723' },
-  Quads:      { base: '#388E3C', dark: '#256928' },
-  Hamstrings: { base: '#558B2F', dark: '#33691E' },
-  Calves:     { base: '#4E342E', dark: '#321911' },
-  'Lower Back': { base: '#37474F', dark: '#263238' },
+// Professional muted colors per muscle group
+const MUSCLE_COLORS: Record<string, string> = {
+  Chest: '#C62828',
+  Shoulders: '#1565C0',
+  Biceps: '#E65100',
+  Triceps: '#D84315',
+  Abs: '#2E7D32',
+  Back: '#0D47A1',
+  Forearms: '#5D4037',
+  Quads: '#388E3C',
+  Hamstrings: '#558B2F',
+  Calves: '#4E342E',
 };
 
-// ===== FRONT VIEW =====
-// Body outline drawn first, muscles placed INSIDE it
-const BODY_OUTLINE_FRONT = `M60,8 C52,8 46,12 44,18 C42,22 42,28 44,32 L42,36 C38,38 30,40 24,44
-C18,48 14,54 12,60 C10,66 10,74 10,82 L8,88
-C6,94 6,102 8,110 L10,114 C8,120 6,132 6,142
-L6,160 C6,166 6,172 8,178 L8,194
-C8,198 10,202 14,202 L26,202 C28,202 30,200 30,196 L30,180
-C30,174 32,168 34,164 L44,164 C46,164 48,166 48,170 L48,180
-C48,186 50,192 52,196 L52,202 L60,202 L60,196
-C60,192 58,186 58,180 L58,170 C58,166 60,164 62,164
-L72,164 C74,168 76,174 76,180 L76,196
-C76,200 78,202 80,202 L92,202 C96,202 98,198 98,194
-L98,178 C100,172 102,166 102,160 L102,142
-C102,132 100,120 98,114 L100,110 C102,102 102,94 100,88
-L98,82 C98,74 98,66 96,60
-C94,54 90,48 84,44 C78,40 70,38 66,36 L64,32
-C66,28 66,22 64,18 C62,12 56,8 60,8 Z`;
+// ============================================================
+// FRONT VIEW — Anatomically correct SVG paths
+// Body proportions based on 8-head canon (standard anatomy)
+// ViewBox: 0,0 to 120,240 (120 wide, 240 tall)
+// Head: 0-30, Neck: 30-40, Chest: 40-80, Abs: 80-110,
+// Hips: 110-120, Thighs: 120-170, Calves: 170-220, Feet: 220-240
+// ============================================================
 
-// Muscle paths — positioned to fit INSIDE the body outline
-const FRONT_MUSCLES: Record<string, { path: string; cx: number; cy: number; label: string }> = {
+// Body silhouette — organic curves
+const BODY_SILHOUETTE = `M60,6 C50,6 42,10 40,16 C38,20 38,24 40,28
+L38,32 C34,34 26,36 20,40 C14,44 10,50 8,56 C6,62 6,70 6,78
+L4,84 C2,90 2,98 4,106 L6,110 C4,116 2,128 2,138
+L2,158 C2,164 2,170 4,176 L4,198 C4,202 6,206 10,206
+L22,206 C24,206 26,204 26,200 L26,182 C26,176 28,170 30,166
+L40,166 C42,166 44,168 44,172 L44,182 C44,188 46,194 48,198
+L48,206 L60,206 L60,198 C60,194 58,188 58,182 L58,172
+C58,168 60,166 62,166 L72,166 C74,170 76,176 76,182
+L76,200 C76,204 78,206 80,206 L92,206 C96,206 98,202 98,198
+L98,176 C100,170 102,164 102,158 L102,138
+C102,128 100,116 98,110 L100,106 C102,98 102,90 100,84
+L98,78 C98,70 98,62 96,56 C94,50 90,44 84,40
+C78,36 70,34 66,32 L64,28 C66,24 66,20 64,16
+C62,10 54,6 60,6 Z`;
+
+// ===== FRONT MUSCLES =====
+const FRONT_MUSCLES: Record<string, { path: string; label: string; cx: number; cy: number }> = {
   'Shoulders': {
-    // Deltoid caps — sit on outer edge of upper torso, INSIDE outline
-    path: `M36,38 C32,38 26,40 22,44 C20,46 18,50 18,54
-           C18,58 20,62 24,64 C28,62 32,56 36,50 Z
-           M84,38 C88,38 94,40 98,44 C100,46 102,50 102,54
-           C102,58 100,62 96,64 C92,62 88,56 84,50 Z`,
-    cx: 22, cy: 54,
-    label: 'Shoulders',
+    // Deltoid — cap on outer shoulder
+    path: `M28,38 C22,38 16,42 12,48 C10,52 10,58 12,62 C16,64 22,60 26,54 C28,50 28,44 28,38 Z
+           M92,38 C98,38 104,42 108,48 C110,52 110,58 108,62 C104,64 98,60 94,54 C92,50 92,44 92,38 Z`,
+    label: 'Shoulders', cx: 14, cy: 52,
   },
   'Chest': {
-    // Pectoralis major — two fan shapes covering front of ribcage
-    path: `M38,42 C38,40 42,38 48,38 L58,38 C58,40 58,42 58,44
-           C56,48 52,52 48,56 C44,60 40,62 38,62 Z
-           M82,42 C82,40 78,38 72,38 L62,38 C62,40 62,42 62,44
-           C64,48 68,52 72,56 C76,60 80,62 82,62 Z`,
-    cx: 48, cy: 52,
-    label: 'Chest',
+    // Pectoralis — two fan shapes from collarbone to armpit
+    path: `M32,40 C32,38 36,36 42,36 L58,36 C58,38 58,40 58,42
+           C56,46 52,50 48,54 C44,58 38,60 34,60 C32,58 32,50 32,40 Z
+           M88,40 C88,38 84,36 78,36 L62,36 C62,38 62,40 62,42
+           C64,46 68,50 72,54 C76,58 82,60 86,60 C88,58 88,50 88,40 Z`,
+    label: 'Chest', cx: 46, cy: 50,
   },
   'Biceps': {
-    // Bicep bulge — oval on front of upper arm
-    path: `M18,56 C16,56 14,58 14,62 C14,68 14,74 16,78
-           C18,80 20,80 22,78 C24,74 24,68 24,62 C24,58 22,56 20,56 Z
-           M100,56 C102,56 104,58 104,62 C104,68 104,74 102,78
-           C100,80 98,80 96,78 C94,74 94,68 94,62 C94,58 96,56 98,56 Z`,
-    cx: 18, cy: 68,
-    label: 'Biceps',
+    // Bicep bulge — front of upper arm
+    path: `M12,52 C10,52 8,56 8,62 C8,70 8,78 10,82 C12,84 14,84 16,82 C18,78 18,70 18,62 C18,56 16,52 14,52 Z
+           M104,52 C106,52 108,56 108,62 C108,70 108,78 106,82 C104,84 102,84 100,82 C98,78 98,70 98,62 C98,56 100,52 102,52 Z`,
+    label: 'Biceps', cx: 12, cy: 68,
   },
   'Abs': {
-    // Rectus abdominis — vertical strip in center of torso
+    // Rectus abdominis — center strip with horizontal lines
     path: `M52,62 C52,60 54,58 56,58 L64,58 C66,58 68,60 68,62
-           L68,92 C68,94 66,96 64,96 L56,96 C54,96 52,94 52,92 Z`,
-    cx: 60, cy: 78,
-    label: 'Abs',
+           L68,100 C68,102 66,104 64,104 L56,104 C54,104 52,102 52,100 Z`,
+    label: 'Abs', cx: 60, cy: 82,
   },
   'Forearms': {
-    // Forearm — tapered shape from elbow to wrist
-    path: `M10,82 C8,84 8,90 8,96 C8,102 8,108 10,112
-           C12,110 14,104 14,98 C14,92 12,86 10,82 Z
-           M106,82 C108,84 108,90 108,96 C108,102 108,108 106,112
-           C104,110 102,104 102,98 C102,92 104,86 106,82 Z`,
-    cx: 10, cy: 98,
-    label: 'Forearms',
+    // Forearm — tapered from elbow to wrist
+    path: `M6,84 C4,86 4,94 4,102 C4,110 4,116 6,120
+           C8,118 10,112 10,104 C10,96 8,88 6,84 Z
+           M110,84 C112,86 112,94 112,102 C112,110 112,116 110,120
+           C108,118 106,112 106,104 C106,96 108,88 110,84 Z`,
+    label: 'Forearms', cx: 6, cy: 104,
   },
   'Quads': {
-    // Quadriceps — large front thigh muscles
-    path: `M36,102 C34,102 32,106 32,112 L32,148 C32,152 34,156 36,156
-           L46,156 C48,156 48,152 48,148 L48,112 C48,106 46,102 44,102 Z
-           M80,102 C82,102 84,106 84,112 L84,148 C84,152 82,156 80,156
-           L70,156 C68,156 68,152 68,148 L68,112 C68,106 70,102 72,102 Z`,
-    cx: 40, cy: 132,
-    label: 'Quads',
+    // Quadriceps — large front thigh
+    path: `M34,122 C32,122 30,126 30,132 L30,162 C30,166 32,170 34,170
+           L46,170 C48,170 48,166 48,162 L48,132 C48,126 46,122 44,122 Z
+           M82,122 C84,122 86,126 86,132 L86,162 C86,166 84,170 82,170
+           L70,170 C68,170 68,166 68,162 L68,132 C68,126 70,122 72,122 Z`,
+    label: 'Quads', cx: 38, cy: 148,
   },
   'Calves': {
     // Tibialis anterior — front of lower leg
-    path: `M38,160 C36,160 34,164 34,170 L34,190 C34,194 36,196 38,196
-           L46,196 C48,196 48,194 48,190 L48,170 C48,164 46,160 44,160 Z
-           M78,160 C80,160 82,164 82,170 L82,190 C82,194 80,196 78,196
-           L70,196 C68,196 68,194 68,190 L68,170 C68,164 70,160 72,160 Z`,
-    cx: 42, cy: 180,
-    label: 'Calves',
+    path: `M36,174 C34,174 32,178 32,184 L32,200 C32,204 34,206 36,206
+           L44,206 C46,206 46,204 46,200 L46,184 C46,178 44,174 42,174 Z
+           M80,174 C82,174 84,178 84,184 L84,200 C84,204 82,206 80,206
+           L72,206 C70,206 70,204 70,200 L70,184 C70,178 72,174 74,174 Z`,
+    label: 'Calves', cx: 38, cy: 192,
   },
 };
 
-// ===== BACK VIEW =====
-const BACK_MUSCLES: Record<string, { path: string; cx: number; cy: number; label: string }> = {
+// ===== BACK MUSCLES =====
+const BACK_MUSCLES: Record<string, { path: string; label: string; cx: number; cy: number }> = {
   'Shoulders': {
-    path: `M34,36 C28,36 22,38 18,42 C16,46 16,50 18,54
-           C22,56 26,54 30,50 C34,46 36,42 36,38 Z
-           M86,36 C92,36 98,38 102,42 C104,46 104,50 102,54
-           C98,56 94,54 90,50 C86,46 84,42 84,38 Z`,
-    cx: 24, cy: 48,
-    label: 'Rear Delts',
+    path: `M26,36 C20,36 14,40 10,46 C8,50 8,56 10,60 C14,62 20,58 24,52 C26,48 26,42 26,36 Z
+           M94,36 C100,36 106,40 110,46 C112,50 112,56 110,60 C106,62 100,58 96,52 C94,48 94,42 94,36 Z`,
+    label: 'Rear Delts', cx: 12, cy: 50,
   },
   'Back': {
-    // Trapezius + Lats — broad V-shape covering back
-    path: `M40,38 C40,36 44,34 50,34 L70,34 C76,34 80,36 80,38
-           L80,56 C80,60 78,64 74,66 L64,68 C62,68 58,68 56,68
-           L46,66 C42,64 40,60 40,56 Z
-           M42,66 C42,64 44,62 48,62 L72,62 C76,62 78,64 78,66
-           L78,84 C78,88 76,90 72,90 L48,90 C44,90 42,88 42,84 Z`,
-    cx: 60, cy: 62,
-    label: 'Back',
+    // Trapezius + Lats — broad V
+    path: `M34,36 C34,34 38,32 44,32 L76,32 C82,32 86,34 86,36
+           L86,58 C86,62 84,66 80,68 L66,72 C64,72 56,72 54,72
+           L40,68 C36,66 34,62 34,58 Z
+           M36,68 C36,66 38,64 42,64 L78,64 C82,64 84,66 84,68
+           L84,92 C84,96 82,98 78,98 L42,98 C38,98 36,96 36,92 Z`,
+    label: 'Back', cx: 60, cy: 64,
   },
   'Triceps': {
-    path: `M14,54 C12,54 10,58 10,64 C10,70 10,76 12,80
-           C14,82 16,82 18,80 C20,76 20,70 20,64 C20,58 18,54 16,54 Z
-           M102,54 C104,54 106,58 106,64 C106,70 106,76 104,80
-           C102,82 100,82 98,80 C96,76 96,70 96,64 C96,58 98,54 100,54 Z`,
-    cx: 14, cy: 66,
-    label: 'Triceps',
+    // Triceps — back of upper arm
+    path: `M10,50 C8,50 6,54 6,60 C6,68 6,76 8,80 C10,82 12,82 14,80 C16,76 16,68 16,60 C16,54 14,50 12,50 Z
+           M106,50 C108,50 110,54 110,60 C110,68 110,76 108,80 C106,82 104,82 102,80 C100,76 100,68 100,60 C100,54 102,50 104,50 Z`,
+    label: 'Triceps', cx: 10, cy: 64,
   },
   'Forearms': {
-    path: `M8,84 C6,86 6,92 6,98 C6,104 6,110 8,114
-           C10,112 12,106 12,100 C12,94 10,88 8,84 Z
-           M104,84 C106,86 106,92 106,98 C106,104 106,110 104,114
-           C102,112 100,106 100,100 C100,94 102,88 104,84 Z`,
-    cx: 8, cy: 100,
-    label: 'Forearms',
+    path: `M4,86 C2,88 2,96 2,104 C2,112 2,118 4,122
+           C6,120 8,114 8,106 C8,98 6,90 4,86 Z
+           M112,86 C114,88 114,96 114,104 C114,112 114,118 112,122
+           C110,120 108,114 108,106 C108,98 110,90 112,86 Z`,
+    label: 'Forearms', cx: 4, cy: 106,
   },
   'Hamstrings': {
-    path: `M34,102 C32,102 30,106 30,112 L30,148 C30,152 32,156 34,156
-           L48,156 C50,156 50,152 50,148 L50,112 C50,106 48,102 46,102 Z
-           M82,102 C84,102 86,106 86,112 L86,148 C86,152 84,156 82,156
-           L68,156 C66,156 66,152 66,148 L66,112 C66,106 68,102 70,102 Z`,
-    cx: 40, cy: 132,
-    label: 'Hamstrings',
+    path: `M32,122 C30,122 28,126 28,132 L28,162 C28,166 30,170 32,170
+           L46,170 C48,170 48,166 48,162 L48,132 C48,126 46,122 44,122 Z
+           M84,122 C86,122 88,126 88,132 L88,162 C88,166 86,170 84,170
+           L70,170 C68,170 68,166 68,162 L68,132 C68,126 70,122 72,122 Z`,
+    label: 'Hamstrings', cx: 38, cy: 148,
   },
   'Calves': {
-    // Gastrocnemius — diamond shape on back of lower leg
-    path: `M36,160 C34,160 32,164 32,170 C32,178 34,184 36,188
-           C38,184 40,178 40,170 C40,164 38,160 36,160 Z
-           M80,160 C82,160 84,164 84,170 C84,178 82,184 80,188
-           C78,184 76,178 76,170 C76,164 78,160 80,160 Z`,
-    cx: 36, cy: 176,
-    label: 'Calves',
+    // Gastrocnemius — diamond shape
+    path: `M34,174 C32,174 30,178 30,184 C30,192 32,198 34,202
+           C36,198 38,192 38,184 C38,178 36,174 34,174 Z
+           M82,174 C84,174 86,178 86,184 C86,192 84,198 82,202
+           C80,198 78,192 78,184 C78,178 80,174 82,174 Z`,
+    label: 'Calves', cx: 34, cy: 190,
   },
   'Abs': {
     // Lower back / Erector spinae
-    path: `M52,86 C52,84 54,82 56,82 L64,82 C66,82 68,84 68,86
-           L68,100 C68,102 66,104 64,104 L56,104 C54,104 52,102 52,100 Z`,
-    cx: 60, cy: 94,
-    label: 'Lower Back',
+    path: `M52,92 C52,90 54,88 56,88 L64,88 C66,88 68,90 68,92
+           L68,108 C68,110 66,112 64,112 L56,112 C54,112 52,110 52,108 Z`,
+    label: 'Lower Back', cx: 60, cy: 100,
   },
 };
 
+// Gradient defs
 function MuscleGradients() {
   return (
     <defs>
-      {Object.entries(MUSCLE_COLORS).map(([name, colors]) => (
+      {Object.entries(MUSCLE_COLORS).map(([name, color]) => (
         <linearGradient key={name} id={`grad-${name}`} x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor={colors.base} stopOpacity={0.95} />
-          <stop offset="40%" stopColor={colors.base} stopOpacity={1} />
-          <stop offset="100%" stopColor={colors.dark} stopOpacity={0.85} />
+          <stop offset="0%" stopColor={color} stopOpacity={0.9} />
+          <stop offset="50%" stopColor={color} stopOpacity={1} />
+          <stop offset="100%" stopColor={color} stopOpacity={0.75} />
         </linearGradient>
       ))}
-      <filter id="muscle-glow" x="-40%" y="-40%" width="180%" height="180%">
-        <feGaussianBlur stdDeviation="2.5" result="blur" />
+      <filter id="muscle-glow" x="-30%" y="-30%" width="160%" height="160%">
+        <feGaussianBlur stdDeviation="2" result="blur" />
         <feMerge>
           <feMergeNode in="blur" />
           <feMergeNode in="SourceGraphic" />
@@ -189,8 +174,8 @@ function MuscleGradients() {
   );
 }
 
-export default function AnatomyBody({ muscleScores, view, width = 140 }: AnatomyBodyProps) {
-  const height = width * (210 / 120);
+export default function AnatomyBody({ muscleScores, view, width = 130 }: AnatomyBodyProps) {
+  const height = width * (240 / 120);
   const [hovered, setHovered] = useState<string | null>(null);
 
   const scoresMap = useMemo(() => {
@@ -203,53 +188,42 @@ export default function AnatomyBody({ muscleScores, view, width = 140 }: Anatomy
 
   return (
     <div className="text-center relative">
-      <p className="text-[10px] font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--text-muted)' }}>
+      <p className="text-[10px] font-semibold uppercase tracking-wider mb-2"
+        style={{ color: 'var(--text-muted)' }}>
         {view === 'front' ? 'Front' : 'Back'}
       </p>
-      <svg viewBox="0 0 120 210" width={width} height={height} className="mx-auto">
+      <svg viewBox="0 0 120 240" width={width} height={height} className="mx-auto">
         <MuscleGradients />
 
-        {/* Body outline */}
-        <path
-          d={BODY_OUTLINE_FRONT}
-          fill="rgba(255,255,255,0.02)"
-          stroke="rgba(255,255,255,0.1)"
-          strokeWidth="0.6"
-        />
+        {/* Body silhouette */}
+        <path d={BODY_SILHOUETTE} fill="rgba(255,255,255,0.02)" stroke="rgba(255,255,255,0.08)" strokeWidth="0.5" />
 
         {/* Head */}
-        <ellipse cx="60" cy="14" rx="12" ry="14" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.06)" strokeWidth="0.4" />
+        <ellipse cx="60" cy="16" rx="12" ry="14" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.06)" strokeWidth="0.4" />
 
         {/* Neck */}
-        <path d="M54,26 C54,24 56,22 60,22 C64,22 66,24 66,26 L66,34 L54,34 Z" fill="rgba(255,255,255,0.02)" />
+        <path d="M54,28 C54,26 56,24 60,24 C64,24 66,26 66,28 L66,36 L54,36 Z" fill="rgba(255,255,255,0.02)" />
 
         {/* Muscle groups */}
-        {Object.entries(muscles).map(([muscleName, def]) => {
-          const score = scoresMap.get(muscleName);
+        {Object.entries(muscles).map(([name, def]) => {
+          const score = scoresMap.get(name);
           const tier = score?.tier ?? getTier(0);
           const hasData = score && score.score > 0;
-          const isHovered = hovered === muscleName;
-
-          // Fill: gradient if active, dim if not
-          const fill = hasData ? `url(#grad-${muscleName})` : 'rgba(255,255,255,0.04)';
-          const strokeColor = hasData ? tier.color : 'rgba(255,255,255,0.06)';
-          const fillOpacity = hasData ? Math.min(1, 0.5 + (score.score / 5000) * 0.5) : 0.3;
+          const isHovered = hovered === name;
 
           return (
-            <g key={`${view}-${muscleName}`}>
+            <g key={`${view}-${name}`}>
               <path
                 d={def.path}
-                fill={fill}
-                fillOpacity={fillOpacity}
-                stroke={isHovered ? '#fff' : strokeColor}
+                fill={hasData ? `url(#grad-${name})` : 'rgba(255,255,255,0.04)'}
+                fillOpacity={hasData ? Math.min(1, 0.5 + (score.score / 5000) * 0.5) : 0.3}
+                stroke={isHovered ? '#fff' : hasData ? tier.color : 'rgba(255,255,255,0.06)'}
                 strokeWidth={isHovered ? 1.2 : hasData ? 0.6 : 0.3}
                 filter={hasData && score.score > 500 ? 'url(#muscle-glow)' : undefined}
                 style={{ transition: 'all 0.4s ease', cursor: hasData ? 'pointer' : 'default' }}
-                onMouseEnter={() => setHovered(muscleName)}
+                onMouseEnter={() => setHovered(name)}
                 onMouseLeave={() => setHovered(null)}
               />
-
-              {/* Tier dot */}
               {hasData && (
                 <>
                   <circle cx={def.cx} cy={def.cy} r={5} fill="rgba(0,0,0,0.6)" stroke={tier.color} strokeWidth={0.8} />
@@ -264,8 +238,8 @@ export default function AnatomyBody({ muscleScores, view, width = 140 }: Anatomy
         })}
 
         {/* Feet */}
-        <path d="M34,198 C34,200 36,202 40,202 L48,202 C50,202 50,200 50,198 Z" fill="rgba(255,255,255,0.02)" />
-        <path d="M66,198 C66,200 68,202 72,202 L80,202 C82,202 84,200 84,198 Z" fill="rgba(255,255,255,0.02)" />
+        <path d="M32,208 C32,210 34,212 38,212 L48,212 C50,212 50,210 50,208 Z" fill="rgba(255,255,255,0.02)" />
+        <path d="M66,208 C66,210 68,212 72,212 L82,212 C84,212 86,210 86,208 Z" fill="rgba(255,255,255,0.02)" />
       </svg>
 
       {/* Hover tooltip */}

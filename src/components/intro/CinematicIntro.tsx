@@ -28,7 +28,7 @@ function getDayType(): string {
  */
 function getVertexMuscle(x: number, y: number, z: number): string | null {
   const absX = Math.abs(x);
-  const isFront = y > 0;  // raw_Y positive = front of body
+  const isFront = y < 0;  // raw_Y negative = FRONT (verified: torso vertices have Y ≈ -0.14)
 
   // Arms — far from center
   if (absX > 0.055) {
@@ -62,17 +62,7 @@ function getVertexMuscle(x: number, y: number, z: number): string | null {
   return 'Calves';
 }
 
-const TIER_COLORS: Record<string, THREE.Color> = {
-  Beginner: new THREE.Color(0x9CA3AF),
-  Novice: new THREE.Color(0xFACC15),
-  Intermediate: new THREE.Color(0x38BDF8),
-  Advanced: new THREE.Color(0x3B82F6),
-  Elite: new THREE.Color(0xF97316),
-  Legendary: new THREE.Color(0xEF4444),
-};
-
 const HIGHLIGHT_COLOR = new THREE.Color(0xFF5E00);
-const NEUTRAL_COLOR = new THREE.Color(0x22263a);
 
 export default function CinematicIntro({
   muscleScores,
@@ -224,81 +214,45 @@ export default function CinematicIntro({
     groundGlow.position.y = -1.5;
     scene.add(groundGlow);
 
-    // ===== VERTEX COLORING =====
-    const applyColors = (group: THREE.Group, highlighted: Set<string>, isHighlightPhase: boolean) => {
+    // ===== INTRO: Use original silver model, just brighten it =====
+    // The model keeps its original material (silver/gray)
+    // We only add emissive glow on highlighted muscles during the highlight phase
+    const applyIntroGlow = (group: THREE.Group, highlighted: Set<string>) => {
       group.traverse((child) => {
         if (child instanceof THREE.Mesh && child.geometry) {
           const geo = child.geometry;
           const pos = geo.getAttribute('position') as THREE.BufferAttribute;
           if (!pos) return;
 
-          const colors = new Float32Array(pos.count * 3);
-
+          // Determine if this mesh's vertices overlap with highlighted muscles
+          const muscleCounts = new Map<string, number>();
           for (let i = 0; i < pos.count; i++) {
-            const x = pos.getX(i);
-            const y = pos.getY(i);
-            const z = pos.getZ(i);
-            const muscle = getVertexMuscle(x, y, z);
-
-            if (isHighlightPhase && muscle && highlighted.has(muscle)) {
-              const score = scoreMapRef.current.get(muscle);
-              const tc = score?.tier.color ? TIER_COLORS[score.tier.name] ?? HIGHLIGHT_COLOR : HIGHLIGHT_COLOR;
-              const boost = 1.3;
-              colors[i * 3] = Math.min(1, tc.r * boost);
-              colors[i * 3 + 1] = Math.min(1, tc.g * boost);
-              colors[i * 3 + 2] = Math.min(1, tc.b * boost);
-            } else if (muscle) {
-              const score = scoreMapRef.current.get(muscle);
-              if (score && score.score > 0) {
-                const c = TIER_COLORS[score.tier.name] ?? NEUTRAL_COLOR;
-                colors[i * 3] = c.r * 0.45;
-                colors[i * 3 + 1] = c.g * 0.45;
-                colors[i * 3 + 2] = c.b * 0.45;
-              } else {
-                colors[i * 3] = 0.22;
-                colors[i * 3 + 1] = 0.22;
-                colors[i * 3 + 2] = 0.26;
-              }
-            } else {
-              colors[i * 3] = 0.18;
-              colors[i * 3 + 1] = 0.18;
-              colors[i * 3 + 2] = 0.20;
-            }
+            const m = getVertexMuscle(pos.getX(i), pos.getY(i), pos.getZ(i));
+            if (m) muscleCounts.set(m, (muscleCounts.get(m) || 0) + 1);
+          }
+          let dominantMuscle = '';
+          let maxCount = 0;
+          for (const [muscle, count] of muscleCounts) {
+            if (count > maxCount) { maxCount = count; dominantMuscle = muscle; }
           }
 
-          geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+          const isHighlighted = dominantMuscle && highlighted.has(dominantMuscle);
+          const glowColor = isHighlighted ? HIGHLIGHT_COLOR : new THREE.Color(0x000000);
+          const glowIntensity = isHighlighted ? 0.8 : 0;
 
-          let emissiveColor = new THREE.Color(0x000000);
-          let emissiveStrength = 0;
-          if (isHighlightPhase) {
-            const muscleCounts = new Map<string, number>();
-            for (let i = 0; i < pos.count; i++) {
-              const m = getVertexMuscle(pos.getX(i), pos.getY(i), pos.getZ(i));
-              if (m) muscleCounts.set(m, (muscleCounts.get(m) || 0) + 1);
-            }
-            let primaryMuscle = '';
-            let maxCount = 0;
-            for (const [muscle, count] of muscleCounts) {
-              if (count > maxCount) { maxCount = count; primaryMuscle = muscle; }
-            }
-            if (primaryMuscle && highlighted.has(primaryMuscle)) {
-              const score = scoreMapRef.current.get(primaryMuscle);
-              const bc = score?.tier.color ? TIER_COLORS[score.tier.name] ?? HIGHLIGHT_COLOR : HIGHLIGHT_COLOR;
-              emissiveColor = bc.clone();
-              emissiveStrength = 0.6;
-            }
-          }
-
+          // Keep original material appearance — bright silver with optional orange glow
           child.material = new THREE.MeshStandardMaterial({
-            vertexColors: true,
-            roughness: 0.3,
-            metalness: 0.1,
-            emissive: emissiveColor,
-            emissiveIntensity: emissiveStrength,
+            color: new THREE.Color(0xcccccc),  // Bright silver
+            roughness: 0.35,
+            metalness: 0.2,
+            emissive: glowColor,
+            emissiveIntensity: glowIntensity,
             transparent: false,
             opacity: 1,
             side: THREE.DoubleSide,
           });
+
+          child.userData.muscleName = dominantMuscle || 'Body';
         }
       });
     };
@@ -320,7 +274,18 @@ export default function CinematicIntro({
         model.position.sub(center.multiplyScalar(scale));
         model.position.y += 0.3;
 
-        applyColors(model, highlightSet, false);
+        // Apply bright silver material to all meshes
+        model.traverse((child) => {
+          if (child instanceof THREE.Mesh) {
+            child.material = new THREE.MeshStandardMaterial({
+              color: new THREE.Color(0xcccccc),
+              roughness: 0.35,
+              metalness: 0.2,
+              side: THREE.DoubleSide,
+            });
+          }
+        });
+
         scene.add(model);
 
         setPhase('spin');
@@ -348,13 +313,7 @@ export default function CinematicIntro({
         // === Phase 2: Highlight muscles (2.5s) ===
         tl.call(() => {
           setPhase('highlight');
-          applyColors(model, highlightSet, true);
-          // Brighten emissive on highlighted meshes
-          model.traverse((child) => {
-            if (child instanceof THREE.Mesh && child.material instanceof THREE.MeshStandardMaterial) {
-              gsap.to(child.material, { emissiveIntensity: 1.2, duration: 0.8, ease: 'power2.out' });
-            }
-          });
+          applyIntroGlow(model, highlightSet);
         }, [], 2.5);
 
         // Rim light pulses
