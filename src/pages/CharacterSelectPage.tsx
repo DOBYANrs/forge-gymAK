@@ -6,6 +6,7 @@ import { storeUser } from '../components/UserSelector';
 import CinematicIntro from '../components/intro/CinematicIntro';
 import { getDaySchedule } from '../data/schedule';
 import { calculateAllMuscleScores } from '../utils/muscleScoring';
+import { calculateOverallUserRank, type MuscleRankResult } from '../utils/ranking';
 
 type Phase = 'select' | 'intro' | 'done';
 
@@ -42,6 +43,12 @@ export default function CharacterSelectPage({ onSelect }: CharacterSelectPagePro
   const muscleScores = useMemo(() => {
     if (!selectedUser) return [];
     return calculateAllMuscleScores(workoutData, selectedUser);
+  }, [workoutData, selectedUser]);
+
+  // Per-muscle rank tiers used to color the 3D anatomy
+  const muscleRanks = useMemo<MuscleRankResult[]>(() => {
+    if (!selectedUser) return [];
+    return calculateOverallUserRank(workoutData, selectedUser).muscleRanks;
   }, [workoutData, selectedUser]);
 
   const handleUserClick = useCallback((user: UserId) => {
@@ -208,6 +215,7 @@ export default function CharacterSelectPage({ onSelect }: CharacterSelectPagePro
           </div>
 
           <CinematicIntro
+            muscleRanks={muscleRanks}
             muscleScores={muscleScores}
             highlightMuscles={highlightMuscles}
             onComplete={handleIntroComplete}

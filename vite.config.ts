@@ -45,7 +45,7 @@ export default defineConfig({
         maximumFileSizeToCacheInBytes: 50 * 1024 * 1024, // 50MB for GLB model
         runtimeCaching: [
           {
-            urlPattern: /male_anatomy\.glb$/,
+            urlPattern: /muscle_anatomy\.glb$/,
             handler: 'CacheFirst',
             options: {
               cacheName: 'forge-3d-model',
