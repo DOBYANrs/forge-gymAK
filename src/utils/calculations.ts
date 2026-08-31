@@ -61,40 +61,40 @@ export function aggregateMuscleGroupVolume(
 }
 
 export const EXERCISE_MUSCLE_MAP: Record<string, string[]> = {
-  // Monday: Chest A + Shoulders A + Biceps A
+  // Monday: Chest + Back + Shoulders + Triceps + Biceps
   'Incline Chest Press': ['Chest', 'Shoulders'],
-  'Yellow Machine Chest Press': ['Chest'],
   'Cable Fly': ['Chest'],
+  'Lat Pulldown': ['Back', 'Biceps'],
   'Overhead Press': ['Shoulders'],
-  'Biceps Curl': ['Biceps'],
-  'Spider Curl': ['Biceps'],
-  // Tuesday: Back A + Legs A + Abs A
-  'Pull Up': ['Back', 'Biceps'],
-  '1-Hand Lat Pulldown': ['Back'],
-  'Row Machine Var 1': ['Back'],
-  'Low-Foot Placement Leg Press': ['Legs'],
-  'Leg Extension': ['Legs'],
-  'Cable Crunches': ['Abs'],
-  // Thursday: Back B + Chest B + Abs B
-  'Row Machine Var 2': ['Back'],
-  'Front Lever (or Progression)': ['Back', 'Core'],
-  'Lower Chest Cable Pulldown': ['Chest'],
-  'Dig Up': ['Chest', 'Shoulders'],
-  'Leg Side-to-Side / Obliques': ['Abs'],
-  // Friday: Shoulders B + Triceps + Biceps B + Forearms
-  'Archer': ['Chest', 'Shoulders'],
-  'Face Pulls': ['Shoulders', 'Back'],
-  'Triceps Overhead Extension': ['Triceps'],
+  'Row Machine 2 Var 2': ['Back'],
   'Triceps Push Down': ['Triceps'],
-  'Cable Curl / Hammer Cable Curl': ['Biceps', 'Forearms'],
-  'Wrist Flexion': ['Forearms'],
-  'Reverse Wrist Curl (Extension)': ['Forearms'],
-  // Saturday: Legs B + Calves + Abs C
+  'Spider Curl': ['Biceps'],
+  // Tuesday: Legs + Abs
+  'Low-Foot Placement Leg Press': ['Legs'],
   'Hamstring Curl': ['Legs'],
-  'Abduction Machine': ['Legs'],
+  'Leg Extension': ['Legs'],
   'Calf Raise': ['Legs'],
+  'Cable Crunches': ['Abs'],
+  'Oblique Side Switches': ['Abs'],
+  // Thursday: Back + Shoulders + Core
+  'Pull Down': ['Back'],
+  'Row Machine 1 Var 2': ['Back'],
+  '1-Hand Lat Pulldown': ['Back'],
+  'Archer Pull': ['Back', 'Biceps'],
+  'Face Pulls': ['Shoulders', 'Back'],
+  'Front Lever Progression': ['Back', 'Core'],
   'Dead Hang': ['Back', 'Forearms'],
-  'Standard Floor Crunches / Hanging Knee Raises': ['Abs'],
+  // Friday: Legs + Abs
+  'Low-Foot Leg Press': ['Legs'],
+  'Abduction Machine': ['Legs'],
+  'Floor Crunches / Hanging Knee Raises': ['Abs'],
+  // Saturday: Chest + Triceps + Biceps + Forearms
+  'Yellow Machine Chest Press': ['Chest'],
+  'Lower Chest Cable Pulldown': ['Chest'],
+  'Cable Fly 55 Degree': ['Chest'],
+  'Triceps Overhead Extension': ['Triceps'],
+  'Biceps Curl / Cable Curl': ['Biceps', 'Forearms'],
+  'Wrist Flexion & Extension Superset': ['Forearms'],
   // Legacy exercises
   'Bench Press': ['Chest', 'Shoulders'],
   'Incline Dumbbell Press': ['Chest', 'Shoulders'],
@@ -106,7 +106,7 @@ export const EXERCISE_MUSCLE_MAP: Record<string, string[]> = {
   'Face Pull': ['Shoulders', 'Back'],
   'Barbell Row': ['Back'],
   'T-Bar Row': ['Back'],
-  'Lat Pulldown': ['Back'],
+  'Pull Up': ['Back', 'Biceps'],
   'Pull-Ups': ['Back'],
   'Deadlift': ['Back', 'Legs'],
   'Barbell Curl': ['Biceps'],
