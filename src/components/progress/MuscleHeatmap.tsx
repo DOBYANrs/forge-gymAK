@@ -9,7 +9,7 @@ interface MuscleHeatmapProps {
 
 export default function MuscleHeatmap({ muscleScores }: MuscleHeatmapProps) {
   // Separate scored muscles by view
-  const frontMuscles = ['Chest', 'Shoulders', 'Biceps', 'Abs', 'Quads', 'Forearms', 'Calves'];
+  const frontMuscles = ['Chest', 'Shoulders', 'Biceps', 'Abs', 'Quads', 'Forearms', 'Calves', 'Abductors', 'Adductors'];
   const backMuscles = ['Back', 'Shoulders', 'Triceps', 'Hamstrings', 'Calves', 'Forearms', 'Abs'];
 
   const frontScores = useMemo(() =>

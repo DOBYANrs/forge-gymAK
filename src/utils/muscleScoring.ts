@@ -18,6 +18,8 @@ const BASELINE_MULTIPLIERS: Record<string, number> = {
   'Forearms': 0.3,
   'Abs': 0.3,
   'Core': 0.3,
+  'Abductors': 0.6,
+  'Adductors': 0.6,
 };
 
 // Target focus weight: 1.0 for primary, 0.5 for secondary
@@ -34,6 +36,8 @@ const FOCUS_WEIGHT: Record<string, number> = {
   'Core': 1.0,
   'Forearms': 0.5,
   'Lats': 0.5,
+  'Abductors': 1.0,
+  'Adductors': 1.0,
 };
 
 // ============================================================
@@ -99,7 +103,7 @@ const EXERCISE_MUSCLE_TARGET: Record<string, { primary: string[]; secondary: str
   'Reverse Wrist Curl (Extension)': { primary: ['Forearms'], secondary: [] },
   // Saturday: Legs B (Hamstring/Hip) + Calves + Abs C
   'Hamstring Curl': { primary: ['Hamstrings'], secondary: [] },
-  'Abduction Machine': { primary: ['Hamstrings'], secondary: ['Quads'] },
+  'Abduction Machine': { primary: ['Abductors', 'Adductors'], secondary: [] },
   'Calf Raise': { primary: ['Calves'], secondary: [] },
   'Dead Hang': { primary: ['Back', 'Forearms'], secondary: [] },
   'Standard Floor Crunches / Hanging Knee Raises': { primary: ['Abs', 'Core'], secondary: [] },
@@ -169,7 +173,7 @@ export function calculateAllMuscleScores(
   workoutData: Record<string, Record<string, { exercises: ExerciseLog[] } | undefined>>,
   userId: UserId,
 ): MuscleScore[] {
-  const muscles = ['Chest', 'Back', 'Shoulders', 'Quads', 'Hamstrings', 'Calves', 'Biceps', 'Triceps', 'Forearms', 'Abs'];
+  const muscles = ['Chest', 'Back', 'Shoulders', 'Quads', 'Hamstrings', 'Calves', 'Biceps', 'Triceps', 'Forearms', 'Abs', 'Abductors', 'Adductors'];
   const allExercises: ExerciseLog[] = [];
 
   // Gather ALL exercises from ALL time

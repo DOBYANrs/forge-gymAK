@@ -42,45 +42,53 @@ export function getMuscleRank(score: number): TierInfo {
 // ============================================================
 export type MuscleGroup =
   | 'Chest' | 'Back' | 'Shoulders' | 'Biceps' | 'Triceps'
-  | 'Legs' | 'Hamstrings' | 'Calves' | 'Abs' | 'Core' | 'Forearms';
+  | 'Legs' | 'Hamstrings' | 'Calves' | 'Abs' | 'Core' | 'Forearms'
+  | 'Abductors' | 'Adductors';
 
 export const ALL_MUSCLE_GROUPS: MuscleGroup[] = [
   'Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps',
   'Legs', 'Hamstrings', 'Calves', 'Abs', 'Core', 'Forearms',
+  'Abductors', 'Adductors',
 ];
 
 // Map exercise names to the muscle groups they target
 const EXERCISE_TO_MUSCLES: Record<string, MuscleGroup[]> = {
+  // Monday: Chest + Back + Shoulders + Triceps + Biceps
   'Incline Chest Press':              ['Chest', 'Shoulders'],
-  'Yellow Machine Chest Press':       ['Chest'],
   'Cable Fly':                        ['Chest'],
-  'Cable Fly 55 Degree':              ['Chest'],
-  'Lower Chest Cable Pulldown':       ['Chest'],
   'Lat Pulldown':                     ['Back', 'Biceps'],
-  'Pull Down':                        ['Back'],
-  'Pull Up':                          ['Back', 'Biceps'],
-  'Row Machine 2 Var 2':             ['Back'],
-  'Row Machine 1 Var 2':             ['Back'],
-  '1-Hand Lat Pulldown':             ['Back'],
-  'Archer Pull':                      ['Back', 'Biceps'],
-  'Front Lever Progression':          ['Back', 'Core'],
-  'Dead Hang':                        ['Back', 'Forearms'],
   'Overhead Press':                   ['Shoulders'],
-  'Face Pulls':                       ['Shoulders', 'Back'],
+  'Row Machine 2 Var 2':              ['Back', 'Biceps'],
   'Triceps Push Down':                ['Triceps'],
-  'Triceps Overhead Extension':       ['Triceps'],
   'Spider Curl':                      ['Biceps'],
+  // Tuesday: Legs + Abs (Quad + Hamstring focus)
+  'Low-Foot Placement Leg Press':     ['Legs', 'Hamstrings'],
+  'Hamstring Curl':                   ['Hamstrings', 'Legs'],
+  'Leg Extension':                    ['Legs'],
+  'Calf Raise':                       ['Calves', 'Legs'],
+  'Cable Crunches':                   ['Abs', 'Core'],
+  'Oblique Side Switches':            ['Abs', 'Core'],
+  // Thursday: Back + Shoulders + Core
+  'Pull Down':                        ['Back', 'Biceps'],
+  'Row Machine 1 Var 2':              ['Back', 'Biceps'],
+  '1-Hand Lat Pulldown':              ['Back', 'Biceps'],
+  'Archer Pull':                      ['Back', 'Biceps'],
+  'Face Pulls':                       ['Shoulders', 'Back', 'Core'],
+  'Front Lever Progression':          ['Back', 'Core', 'Abs'],
+  'Dead Hang':                        ['Back', 'Forearms'],
+  // Friday: Legs + Abs (Abductors/Adductors focus)
+  'Low-Foot Leg Press':               ['Legs', 'Hamstrings'],
+  'Abduction Machine':                ['Abductors', 'Adductors'],
+  'Floor Crunches / Hanging Knee Raises': ['Abs', 'Core'],
+  // Saturday: Chest + Triceps + Biceps + Forearms
+  'Yellow Machine Chest Press':       ['Chest'],
+  'Lower Chest Cable Pulldown':       ['Chest', 'Triceps'],
+  'Cable Fly 55 Degree':              ['Chest'],
+  'Triceps Overhead Extension':       ['Triceps'],
   'Biceps Curl / Cable Curl':         ['Biceps', 'Forearms'],
   'Wrist Flexion & Extension Superset': ['Forearms'],
-  'Low-Foot Placement Leg Press':     ['Legs'],
-  'Low-Foot Leg Press':              ['Legs'],
-  'Leg Extension':                    ['Legs'],
-  'Hamstring Curl':                   ['Legs', 'Hamstrings'],
-  'Calf Raise':                       ['Legs', 'Calves'],
-  'Abduction Machine':               ['Legs'],
-  'Cable Crunches':                   ['Abs'],
-  'Floor Crunches / Hanging Knee Raises': ['Abs'],
-  'Oblique Side Switches':            ['Abs'],
+  // Shared aliases
+  'Pull Up':                          ['Back', 'Biceps'],
 };
 
 // ============================================================
