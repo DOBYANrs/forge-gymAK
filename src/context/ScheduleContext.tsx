@@ -17,8 +17,8 @@ interface ScheduleContextType {
   clearDaySchedule: (dayOfWeek: DayOfWeek) => void;
 }
 
-const SCHEDULE_STORAGE_KEY = 'forge_gym_custom_schedule';
-const SCHEDULE_VERSION_KEY = 'forge_gym_schedule_version';
+const SCHEDULE_STORAGE_KEY = 'kasaint_gym_custom_schedule';
+const SCHEDULE_VERSION_KEY = 'kasaint_gym_schedule_version';
 // Bump this whenever WEEKLY_SCHEDULE changes to force-clear old custom data
 const CURRENT_SCHEDULE_VERSION = '3.0';
 
@@ -38,8 +38,8 @@ function loadFromStorage(): Record<DayOfWeek, PresetExercise[]> {
     if (storedVersion !== CURRENT_SCHEDULE_VERSION) {
       // New schedule version — wipe ALL old custom data
       localStorage.removeItem(SCHEDULE_STORAGE_KEY);
-      localStorage.removeItem('forge_gym_workout_data');
-      localStorage.removeItem('forge_gym_deleted_exercises');
+      localStorage.removeItem('kasaint_gym_workout_data');
+      localStorage.removeItem('kasaint_gym_deleted_exercises');
       localStorage.setItem(SCHEDULE_VERSION_KEY, CURRENT_SCHEDULE_VERSION);
       return { ...EMPTY_SCHEDULE };
     }

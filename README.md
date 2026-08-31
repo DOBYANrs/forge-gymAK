@@ -1,4 +1,4 @@
-# FORGE Gym Tracker AK 💪
+# KASAINT Gym Tracker AK 💪
 
 A mobile-first workout tracking application for Abel and Keneni. Track your daily workouts, log sets (weight × reps), compare progress, and sync in real-time via Firebase.
 
@@ -42,4 +42,4 @@ Create a `.env` file in the project root with your Firebase config (see `.env.ex
 
 Push to the `main` branch — GitHub Actions automatically builds and deploys to:
 
-**https://dob-yan.github.io/forge-gymAK/**
+**https://dob-yan.github.io/kasaint-gym/**

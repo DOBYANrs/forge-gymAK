@@ -9,7 +9,7 @@ export default function Header() {
 
   const handleExport = () => {
     const data = exportAllData();
-    const filename = `forge-gymAK-backup-${new Date().toISOString().split('T')[0]}.json`;
+    const filename = `kasaint-gym-backup-${new Date().toISOString().split('T')[0]}.json`;
     downloadJsonFile(data, filename);
     setShowBackupMenu(false);
   };
@@ -44,7 +44,7 @@ export default function Header() {
       <div className="max-w-lg mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <h1 className="text-xl font-bold" style={{ color: '#FF5E00' }}>FORGE</h1>
+            <h1 className="text-xl font-bold" style={{ color: '#FF5E00' }}>KASAINT</h1>
             <span className="text-sm hidden xs:inline" style={{ color: 'rgba(148,163,184,0.7)' }}>
               Abel & Keneni
             </span>

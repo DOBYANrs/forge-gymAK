@@ -198,7 +198,7 @@ export default function BodyHeatmap3D({ muscleScores, height = 400 }: BodyHeatma
     // Load GLB
     const loader = new GLTFLoader();
     loader.load(
-      '/forge-gymAK/muscle_anatomy.glb',
+      '/kasaint-gym/muscle_anatomy.glb',
       (gltf) => {
         const model = gltf.scene;
 

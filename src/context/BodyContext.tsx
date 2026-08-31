@@ -14,7 +14,7 @@ interface BodyContextType {
   getAllMetrics: (userId: UserId) => BodyMetrics[];
 }
 
-const STORAGE_KEY = 'forge_gym_body_metrics';
+const STORAGE_KEY = 'kasaint_gym_body_metrics';
 
 function loadFromStorage(): BodyMetricsData {
   try {

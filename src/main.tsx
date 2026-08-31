@@ -20,7 +20,7 @@ if (redirect) {
 }
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <BrowserRouter basename="/forge-gymAK">
+    <BrowserRouter basename="/kasaint-gym">
       <UserProvider>
         <ScheduleProvider>
           <WorkoutProvider>

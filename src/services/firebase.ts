@@ -43,10 +43,10 @@ function getDatabaseInstance() {
   return db;
 }
 
-const WORKOUT_PATH = 'forge-gymAK/workouts';
-const DELETED_PATH = 'forge-gymAK/deletedExercises';
-const BODY_PATH = 'forge-gymAK/bodyMetrics';
-const SCHEDULE_PATH = 'forge-gymAK/customSchedule';
+const WORKOUT_PATH = 'kasaint-gym/workouts';
+const DELETED_PATH = 'kasaint-gym/deletedExercises';
+const BODY_PATH = 'kasaint-gym/bodyMetrics';
+const SCHEDULE_PATH = 'kasaint-gym/customSchedule';
 
 // ─── Workout Data Sync ───
 

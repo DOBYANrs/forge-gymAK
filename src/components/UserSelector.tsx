@@ -1,6 +1,6 @@
 import type { UserId } from '../types';
 
-const SELECTION_KEY = 'forge_gym_selected_user';
+const SELECTION_KEY = 'kasaint_gym_selected_user';
 
 export function getStoredUser(): UserId | null {
   try {
@@ -40,7 +40,7 @@ export default function UserSelector({ onSelect }: UserSelectorProps) {
         {/* Logo */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold tracking-tight" style={{ color: '#FF5E00' }}>
-            FORGE
+            KASAINT
           </h1>
           <p className="text-sm mt-2" style={{ color: 'rgba(148,163,184,0.6)' }}>
             Gym Tracker

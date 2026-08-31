@@ -74,7 +74,7 @@ export default function BodyPage() {
   };
 
   const handleDelete = (userId: UserId, dateKey: string) => {
-    const key = 'forge_gym_body_metrics';
+    const key = 'kasaint_gym_body_metrics';
     try {
       const raw = localStorage.getItem(key);
       if (raw) {

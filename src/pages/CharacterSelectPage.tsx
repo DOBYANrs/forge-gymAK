@@ -94,7 +94,7 @@ export default function CharacterSelectPage({ onSelect }: CharacterSelectPagePro
                 textShadow: '0 0 40px rgba(255,94,0,0.4), 0 0 80px rgba(255,94,0,0.15)',
               }}
             >
-              FORGE
+              KASAINT
             </h1>
             <div className="w-20 h-0.5 mx-auto mt-3 rounded-full" style={{ background: 'linear-gradient(90deg, transparent, #FF5E00, transparent)' }} />
             <p className="text-sm mt-3 tracking-[0.3em] uppercase" style={{ color: 'rgba(148,163,184,0.4)' }}>

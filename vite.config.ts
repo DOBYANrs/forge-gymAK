@@ -11,29 +11,29 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg'],
       manifest: {
-        name: 'FORGE Gym Tracker',
-        short_name: 'FORGE',
+        name: 'KASAINT Gym Tracker',
+        short_name: 'KASAINT',
         description: 'Track workouts for Abel & Keneni — 3D body heatmap, cinematic intro, lifetime ranking',
         theme_color: '#FF5E00',
         background_color: '#0B0C10',
         display: 'standalone',
         orientation: 'portrait',
-        start_url: '/forge-gymAK/',
-        scope: '/forge-gymAK/',
+        start_url: '/kasaint-gym/',
+        scope: '/kasaint-gym/',
         categories: ['health', 'fitness', 'utilities'],
         icons: [
           {
-            src: '/forge-gymAK/favicon.svg',
+            src: '/kasaint-gym/favicon.svg',
             sizes: '192x192',
             type: 'image/svg+xml',
           },
           {
-            src: '/forge-gymAK/favicon.svg',
+            src: '/kasaint-gym/favicon.svg',
             sizes: '512x512',
             type: 'image/svg+xml',
           },
           {
-            src: '/forge-gymAK/favicon.svg',
+            src: '/kasaint-gym/favicon.svg',
             sizes: '192x192',
             type: 'image/svg+xml',
             purpose: 'maskable',
@@ -48,7 +48,7 @@ export default defineConfig({
             urlPattern: /muscle_anatomy\.glb$/,
             handler: 'CacheFirst',
             options: {
-              cacheName: 'forge-3d-model',
+              cacheName: 'kasaint-3d-model',
               expiration: {
                 maxEntries: 1,
                 maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
@@ -62,5 +62,5 @@ export default defineConfig({
       },
     }),
   ],
-  base: '/forge-gymAK/',
+  base: '/kasaint-gym/',
 });

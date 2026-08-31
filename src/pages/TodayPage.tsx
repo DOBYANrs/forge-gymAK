@@ -242,7 +242,7 @@ export default function TodayPage() {
           {dayName}{!isToday ? ' (Make-up)' : ''}
         </p>
         <h2 className="text-xl font-bold mb-1 relative z-10" style={{ color: '#f1f5f9', letterSpacing: '-0.03em' }}>
-          {schedule.isRestDay ? 'Time to Recover' : 'Forge Your Strength'}
+          {schedule.isRestDay ? 'Time to Recover' : 'Kasaint Your Strength'}
         </h2>
         <p className="text-sm relative z-10" style={{ color: 'rgba(148,163,184,0.65)' }}>
           {selectedDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
@@ -429,7 +429,7 @@ export default function TodayPage() {
               <button
                 onClick={() => {
                   if (window.confirm('Clear all exercises from this workout?')) {
-                    const key = 'forge_gym_workout_data';
+                    const key = 'kasaint_gym_workout_data';
                     try {
                       const raw = localStorage.getItem(key);
                       if (raw) {

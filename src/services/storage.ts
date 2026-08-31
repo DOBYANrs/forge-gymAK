@@ -6,8 +6,8 @@ export function exportAllData(): {
   exportedAt: string;
   version: string;
 } {
-  const workouts = JSON.parse(localStorage.getItem('forge_gym_workout_data') ?? '{}');
-  const bodyMetrics = JSON.parse(localStorage.getItem('forge_gym_body_metrics') ?? '{}');
+  const workouts = JSON.parse(localStorage.getItem('kasaint_gym_workout_data') ?? '{}');
+  const bodyMetrics = JSON.parse(localStorage.getItem('kasaint_gym_body_metrics') ?? '{}');
 
   return {
     workouts,
@@ -23,10 +23,10 @@ export function importAllData(data: {
 }): { success: boolean; message: string } {
   try {
     if (data.workouts) {
-      localStorage.setItem('forge_gym_workout_data', JSON.stringify(data.workouts));
+      localStorage.setItem('kasaint_gym_workout_data', JSON.stringify(data.workouts));
     }
     if (data.bodyMetrics) {
-      localStorage.setItem('forge_gym_body_metrics', JSON.stringify(data.bodyMetrics));
+      localStorage.setItem('kasaint_gym_body_metrics', JSON.stringify(data.bodyMetrics));
     }
     return { success: true, message: 'Data imported successfully. Refresh the page to see changes.' };
   } catch (error) {

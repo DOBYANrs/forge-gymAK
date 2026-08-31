@@ -158,7 +158,7 @@ export default function CinematicIntro({
     // ===== LOAD MODEL =====
     const loader = new GLTFLoader();
     loader.load(
-      '/forge-gymAK/muscle_anatomy.glb',
+      '/kasaint-gym/muscle_anatomy.glb',
       (gltf) => {
         const model = gltf.scene;
 

@@ -14,7 +14,7 @@ export default function SettingsPage() {
 
   const handleExport = () => {
     const data = exportAllData();
-    const filename = `forge-gymAK-backup-${new Date().toISOString().split('T')[0]}.json`;
+    const filename = `kasaint-gym-backup-${new Date().toISOString().split('T')[0]}.json`;
     downloadJsonFile(data, filename);
   };
 
@@ -47,7 +47,7 @@ export default function SettingsPage() {
 
   const handleClearData = () => {
     clearAllData();
-    localStorage.removeItem('forge_gym_body_metrics');
+    localStorage.removeItem('kasaint_gym_body_metrics');
     setShowClearConfirm(false);
     setImportStatus({ success: true, message: 'All data cleared. Refreshing...' });
     setTimeout(() => window.location.reload(), 1000);
@@ -68,7 +68,7 @@ export default function SettingsPage() {
           </div>
           <div>
             <p className="font-semibold text-gray-800 capitalize">{activeUser}</p>
-            <p className="text-xs text-gray-400">Training with FORGE</p>
+            <p className="text-xs text-gray-400">Training with KASAINT</p>
           </div>
         </div>
       </div>
@@ -166,7 +166,7 @@ VITE_FIREBASE_APP_ID=your_app_id`}
 
       {/* App info */}
       <div className="text-center py-4">
-        <p className="text-xs text-gray-300">FORGE Gym Tracker v1.0.0</p>
+        <p className="text-xs text-gray-300">KASAINT Gym Tracker v1.0.0</p>
         <p className="text-xs text-gray-300 mt-1">Built for Abel & Keneni 💪</p>
       </div>
     </div>

@@ -36,8 +36,8 @@ interface WorkoutContextType {
   clearAllData: () => void;
 }
 
-const STORAGE_KEY = 'forge_gym_workout_data';
-const DELETED_KEY = 'forge_gym_deleted_exercises';
+const STORAGE_KEY = 'kasaint_gym_workout_data';
+const DELETED_KEY = 'kasaint_gym_deleted_exercises';
 
 function loadFromStorage<T>(key: string, fallback: T): T {
   try {
