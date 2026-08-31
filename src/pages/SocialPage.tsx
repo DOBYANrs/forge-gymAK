@@ -5,7 +5,7 @@ import Leaderboard from '../components/social/Leaderboard';
 import PRBadges from '../components/progress/PRBadges';
 import RankBodyMap from '../components/progress/RankBodyMap';
 import { useWorkout } from '../context/WorkoutContext';
-import { calculateOverallUserRank } from '../utils/ranking';
+import { calculateOverallUserRank, getTodayActivatedMuscles } from '../utils/ranking';
 
 type Tab = 'feed' | 'leaderboard' | 'prs' | 'heatmap';
 
@@ -17,6 +17,12 @@ export default function SocialPage() {
   // Compute muscle peak ranks for heatmap
   const rankResult = useMemo(
     () => calculateOverallUserRank(workoutData, activeUser),
+    [workoutData, activeUser],
+  );
+
+  // Muscles trained today for the active user (drives the pulse highlight)
+  const activeToday = useMemo(
+    () => getTodayActivatedMuscles(workoutData, activeUser),
     [workoutData, activeUser],
   );
 
@@ -70,7 +76,7 @@ export default function SocialPage() {
           <p className="text-xs font-semibold mb-3 text-center" style={{ color: 'var(--text-muted)' }}>
             Muscle Strength Map
           </p>
-          <RankBodyMap muscleRanks={rankResult.muscleRanks} />
+          <RankBodyMap muscleRanks={rankResult.muscleRanks} activeToday={activeToday} />
         </div>
       )}
     </div>

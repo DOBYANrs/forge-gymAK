@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useUser } from '../context/UserContext';
 import { useWorkout } from '../context/WorkoutContext';
-import { calculateOverallUserRank, RANK_TIERS, MUSCLE_THRESHOLDS } from '../utils/ranking';
+import { calculateOverallUserRank, RANK_TIERS, MUSCLE_THRESHOLDS, getTodayActivatedMuscles } from '../utils/ranking';
 import RankBodyMap from '../components/progress/RankBodyMap';
 
 export default function RankingPage() {
@@ -10,6 +10,11 @@ export default function RankingPage() {
 
   const rankResult = useMemo(
     () => calculateOverallUserRank(workoutData, activeUser),
+    [workoutData, activeUser],
+  );
+
+  const activeToday = useMemo(
+    () => getTodayActivatedMuscles(workoutData, activeUser),
     [workoutData, activeUser],
   );
 
@@ -45,7 +50,7 @@ export default function RankingPage() {
         <p className="text-xs font-semibold mb-3 text-center" style={{ color: 'var(--text-muted)' }}>
           Muscle Strength Map — Click a Muscle for Details
         </p>
-        <RankBodyMap muscleRanks={muscleRanks} />
+        <RankBodyMap muscleRanks={muscleRanks} activeToday={activeToday} />
       </div>
 
       {/* Muscle-Specific Threshold Matrix */}
