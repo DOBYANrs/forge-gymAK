@@ -1,58 +1,51 @@
 import { useMemo } from 'react';
 import { useUser } from '../context/UserContext';
 import { useWorkout } from '../context/WorkoutContext';
-import { calculateAllMuscleScores, getTotalLifetimeScore, getTier, TIERS } from '../utils/muscleScoring';
-import BodyHeatmap3D from '../components/progress/BodyHeatmap3D';
+import { calculateOverallUserRank, RANK_TIERS } from '../utils/ranking';
+import BodyHeatmap2D from '../components/progress/BodyHeatmap2D';
 
 export default function RankingPage() {
   const { activeUser } = useUser();
   const { workoutData } = useWorkout();
 
-  const muscleScores = useMemo(
-    () => calculateAllMuscleScores(workoutData, activeUser),
+  const rankResult = useMemo(
+    () => calculateOverallUserRank(workoutData, activeUser),
     [workoutData, activeUser],
   );
 
-  const totalScore = useMemo(() => getTotalLifetimeScore(muscleScores), [muscleScores]);
-  const totalTier = getTier(totalScore);
-
-  // Sort muscles by score descending
-  const sorted = useMemo(() => [...muscleScores].sort((a, b) => b.score - a.score), [muscleScores]);
+  const { overallRank, overallTier, averageLevel, muscleRanks } = rankResult;
 
   return (
     <div className="space-y-4 page-enter">
-      {/* Header with total score */}
+      {/* Header with overall rank */}
       <div
         className="rounded-2xl p-6 text-center overflow-hidden relative"
         style={{
-          background: `linear-gradient(160deg, ${totalTier.color}15, ${totalTier.color}05)`,
-          border: `1px solid ${totalTier.color}30`,
-          boxShadow: totalTier.cssGlow !== 'none' ? totalTier.cssGlow : undefined,
+          background: `linear-gradient(160deg, ${overallTier.color}15, ${overallTier.color}05)`,
+          border: `1px solid ${overallTier.color}30`,
+          boxShadow: overallTier.cssGlow !== 'none' ? overallTier.cssGlow : undefined,
         }}
       >
         <p className="text-[10px] font-semibold uppercase tracking-[0.2em] mb-1" style={{ color: 'var(--text-muted)' }}>
-          Lifetime Strength Rank
+          Overall Strength Rank
         </p>
-        <p className="text-5xl font-black mb-1" style={{ color: totalTier.color }}>
-          {totalScore.toLocaleString()}
+        <p className="text-5xl font-black mb-1" style={{ color: overallTier.color }}>
+          {overallRank}
         </p>
-        <p className="text-sm font-bold" style={{ color: totalTier.color }}>
-          {totalTier.name}
-        </p>
-        <p className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>
-          {totalTier.glow}
+        <p className="text-sm font-bold" style={{ color: overallTier.color }}>
+          Tier Point Average: {averageLevel.toFixed(1)} / 5.0
         </p>
       </div>
 
-      {/* 3D Heatmap */}
+      {/* 2D Body Heatmap */}
       <div
         className="rounded-2xl p-4"
         style={{ background: 'var(--bg-surface)', border: 'var(--border-subtle)' }}
       >
         <p className="text-xs font-semibold mb-3 text-center" style={{ color: 'var(--text-muted)' }}>
-          3D Muscle Map — Drag to Rotate
+          Muscle Strength Map — Hover for Details
         </p>
-        <BodyHeatmap3D muscleScores={muscleScores} height={320} />
+        <BodyHeatmap2D muscleRanks={muscleRanks} width={160} />
       </div>
 
       {/* Tier Legend */}
@@ -62,7 +55,7 @@ export default function RankingPage() {
       >
         <p className="text-xs font-semibold mb-3" style={{ color: 'var(--text-muted)' }}>Rank Tiers</p>
         <div className="grid grid-cols-3 gap-2">
-          {[...TIERS].reverse().map((tier) => (
+          {[...RANK_TIERS].reverse().map((tier) => (
             <div
               key={tier.name}
               className="rounded-xl p-2.5 text-center"
@@ -74,43 +67,46 @@ export default function RankingPage() {
               <div className="w-4 h-4 rounded-full mx-auto mb-1" style={{ background: tier.color, boxShadow: tier.cssGlow }} />
               <p className="text-[10px] font-bold" style={{ color: tier.color }}>{tier.name}</p>
               <p className="text-[8px]" style={{ color: 'var(--text-muted)' }}>
-                {tier.minScore.toLocaleString()}+
+                {tier.threshold.toLocaleString()}+ pts
               </p>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Muscle Rankings */}
+      {/* Muscle Group Rankings */}
       <div
         className="rounded-2xl p-4"
         style={{ background: 'var(--bg-surface)', border: 'var(--border-subtle)' }}
       >
-        <p className="text-xs font-semibold mb-3" style={{ color: 'var(--text-muted)' }}>Muscle Rankings</p>
+        <p className="text-xs font-semibold mb-3" style={{ color: 'var(--text-muted)' }}>Muscle Rankings (Peak Set Score)</p>
         <div className="space-y-2">
-          {sorted.map((ms, i) => {
-            const maxScore = Math.max(...sorted.map((s) => s.score), 1);
-            const barWidth = (ms.score / maxScore) * 100;
+          {muscleRanks.map((mr) => {
+            const maxScore = Math.max(...muscleRanks.map((m) => m.peakScore), 1);
+            const barWidth = mr.peakScore > 0 ? (mr.peakScore / maxScore) * 100 : 0;
+            const hasData = mr.peakScore > 0;
 
             return (
-              <div key={ms.muscle} className="flex items-center gap-3">
-                <span className="w-5 text-center text-[10px] font-bold" style={{ color: 'var(--text-muted)' }}>
-                  #{i + 1}
-                </span>
+              <div key={mr.muscle} className="flex items-center gap-3">
                 <div className="flex-1">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-semibold" style={{ color: 'rgba(255,255,255,0.9)' }}>
-                      {ms.muscle}
+                    <span className="text-xs font-semibold" style={{ color: hasData ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.3)' }}>
+                      {mr.muscle}
                     </span>
                     <div className="flex items-center gap-2">
                       <span
                         className="text-[9px] px-1.5 py-0.5 rounded-full font-bold"
-                        style={{ background: `${ms.tier.color}20`, color: ms.tier.color }}
+                        style={{ background: `${mr.tier.color}20`, color: mr.tier.color }}
                       >
-                        {ms.tier.name}
+                        {mr.tier.name}
                       </span>
-                      <span className="text-xs font-bold" style={{ color: ms.tier.color }}>
-                        {ms.score.toLocaleString()}
+                      {hasData && (
+                        <span className="text-[9px] font-medium" style={{ color: 'var(--text-muted)' }}>
+                          {mr.peakWeight}kg × {mr.peakReps}
+                        </span>
+                      )}
+                      <span className="text-xs font-bold" style={{ color: hasData ? mr.tier.color : 'rgba(255,255,255,0.2)' }}>
+                        {mr.peakScore.toLocaleString()}
                       </span>
                     </div>
                   </div>
@@ -119,8 +115,8 @@ export default function RankingPage() {
                       className="h-full rounded-full transition-all duration-700"
                       style={{
                         width: `${barWidth}%`,
-                        background: ms.tier.color,
-                        boxShadow: ms.tier.cssGlow !== 'none' ? `0 0 8px ${ms.tier.color}40` : undefined,
+                        background: hasData ? mr.tier.color : 'rgba(255,255,255,0.06)',
+                        boxShadow: hasData && mr.tier.cssGlow !== 'none' ? `0 0 8px ${mr.tier.color}40` : undefined,
                       }}
                     />
                   </div>

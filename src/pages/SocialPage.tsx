@@ -3,9 +3,9 @@ import { useUser } from '../context/UserContext';
 import ActivityFeed from '../components/social/ActivityFeed';
 import Leaderboard from '../components/social/Leaderboard';
 import PRBadges from '../components/progress/PRBadges';
-import MuscleHeatmap from '../components/progress/MuscleHeatmap';
+import BodyHeatmap2D from '../components/progress/BodyHeatmap2D';
 import { useWorkout } from '../context/WorkoutContext';
-import { calculateAllMuscleScores } from '../utils/muscleScoring';
+import { calculateOverallUserRank } from '../utils/ranking';
 
 type Tab = 'feed' | 'leaderboard' | 'prs' | 'heatmap';
 
@@ -14,9 +14,9 @@ export default function SocialPage() {
   const { workoutData } = useWorkout();
   const [activeTab, setActiveTab] = useState<Tab>('feed');
 
-  // Compute lifetime muscle scores for heatmap
-  const muscleScores = useMemo(
-    () => calculateAllMuscleScores(workoutData, activeUser),
+  // Compute muscle peak ranks for heatmap
+  const rankResult = useMemo(
+    () => calculateOverallUserRank(workoutData, activeUser),
     [workoutData, activeUser],
   );
 
@@ -68,10 +68,9 @@ export default function SocialPage() {
       {activeTab === 'heatmap' && (
         <div className="rounded-2xl p-4" style={{ background: 'var(--bg-surface)', border: 'var(--border-subtle)' }}>
           <p className="text-xs font-semibold mb-3 text-center" style={{ color: 'var(--text-muted)' }}>
-            This Week&apos;s Muscle Activation
+            Muscle Strength Map
           </p>
-          <MuscleHeatmap muscleScores={muscleScores} />
-
+          <BodyHeatmap2D muscleRanks={rankResult.muscleRanks} />
         </div>
       )}
     </div>
