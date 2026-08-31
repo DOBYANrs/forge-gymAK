@@ -182,7 +182,7 @@ export default function RankBodyMap({ muscleRanks, activeToday = [] }: RankBodyM
         .daily-active-pulse {
           animation: activeMuscleGlow 2s infinite ease-in-out;
           stroke: #ffffff !important;
-          stroke-width: 1.5px !important;
+          stroke-width: 0.6px !important;
         }
       `}</style>
       <div className="flex gap-4 justify-center items-start">
