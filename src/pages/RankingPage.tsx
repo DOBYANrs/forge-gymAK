@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { useUser } from '../context/UserContext';
 import { useWorkout } from '../context/WorkoutContext';
 import { calculateOverallUserRank, RANK_TIERS } from '../utils/ranking';
-import BodyHeatmap2D from '../components/progress/BodyHeatmap2D';
+import RankBodyMap from '../components/progress/RankBodyMap';
 
 export default function RankingPage() {
   const { activeUser } = useUser();
@@ -43,9 +43,9 @@ export default function RankingPage() {
         style={{ background: 'var(--bg-surface)', border: 'var(--border-subtle)' }}
       >
         <p className="text-xs font-semibold mb-3 text-center" style={{ color: 'var(--text-muted)' }}>
-          Muscle Strength Map — Hover for Details
+          Muscle Strength Map — Click a Muscle for Details
         </p>
-        <BodyHeatmap2D muscleRanks={muscleRanks} width={160} />
+        <RankBodyMap muscleRanks={muscleRanks} />
       </div>
 
       {/* Tier Legend */}

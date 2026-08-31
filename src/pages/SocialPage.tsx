@@ -3,7 +3,7 @@ import { useUser } from '../context/UserContext';
 import ActivityFeed from '../components/social/ActivityFeed';
 import Leaderboard from '../components/social/Leaderboard';
 import PRBadges from '../components/progress/PRBadges';
-import BodyHeatmap2D from '../components/progress/BodyHeatmap2D';
+import RankBodyMap from '../components/progress/RankBodyMap';
 import { useWorkout } from '../context/WorkoutContext';
 import { calculateOverallUserRank } from '../utils/ranking';
 
@@ -70,7 +70,7 @@ export default function SocialPage() {
           <p className="text-xs font-semibold mb-3 text-center" style={{ color: 'var(--text-muted)' }}>
             Muscle Strength Map
           </p>
-          <BodyHeatmap2D muscleRanks={rankResult.muscleRanks} />
+          <RankBodyMap muscleRanks={rankResult.muscleRanks} />
         </div>
       )}
     </div>

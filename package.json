@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@types/three": "^0.185.4",
+    "body-highlighter": "^3.0.2",
     "firebase": "^12.15.0",
     "gsap": "^3.15.0",
     "localforage": "^1.10.0",
