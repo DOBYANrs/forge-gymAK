@@ -25,7 +25,7 @@ export const RANK_TIERS: TierInfo[] = [
   { name: 'Beginner',     threshold: 0,    level: 0, color: '#6b7280', cssGlow: 'none' },
   { name: 'Novice',       threshold: 250,  level: 1, color: '#eab308', cssGlow: '0 0 12px rgba(234,179,8,0.3)' },
   { name: 'Intermediate', threshold: 500,  level: 2, color: '#3b82f6', cssGlow: '0 0 14px rgba(59,130,246,0.35)' },
-  { name: 'Advanced',     threshold: 1000, level: 3, color: '#1e3a8a', cssGlow: '0 0 16px rgba(30,58,138,0.5)' },
+  { name: 'Advanced',     threshold: 1000, level: 3, color: '#7e22ce', cssGlow: '0 0 16px rgba(126,34,206,0.5)' },
   { name: 'Elite',        threshold: 2000, level: 4, color: '#f97316', cssGlow: '0 0 18px rgba(249,115,22,0.45)' },
   { name: 'Legendary',    threshold: 4000, level: 5, color: '#ef4444', cssGlow: '0 0 22px rgba(239,68,68,0.55)' },
 ];
@@ -33,6 +33,71 @@ export const RANK_TIERS: TierInfo[] = [
 export function getMuscleRank(score: number): TierInfo {
   for (let i = RANK_TIERS.length - 1; i >= 0; i--) {
     if (score >= RANK_TIERS[i].threshold) return RANK_TIERS[i];
+  }
+  return RANK_TIERS[0];
+}
+
+// ============================================================
+// MUSCLE-SPECIFIC STRENGTH THRESHOLDS
+// Large compound movers (legs, back) generate higher total force
+// than isolation/smaller push groups (chest, shoulders, arms),
+// so each muscle gets its own point boundaries.
+// Set Score = Weight (kg) × Reps
+// ============================================================
+export interface MuscleThreshold {
+  beginner: number;      // 0+
+  novice: number;
+  intermediate: number;
+  advanced: number;
+  elite: number;
+  legendary: number;
+}
+
+export const MUSCLE_THRESHOLDS: Record<string, MuscleThreshold> = {
+  legs:      { beginner: 0, novice: 300,  intermediate: 700,  advanced: 1400, elite: 2500, legendary: 4000 },
+  back:      { beginner: 0, novice: 250,  intermediate: 550,  advanced: 1100, elite: 1800, legendary: 3000 },
+  chest:     { beginner: 0, novice: 200,  intermediate: 450,  advanced: 900,  elite: 1400, legendary: 2200 },
+  shoulders: { beginner: 0, novice: 120,  intermediate: 300,  advanced: 600,  elite: 1000, legendary: 1500 },
+  arms:      { beginner: 0, novice: 100,  intermediate: 250,  advanced: 500,  elite: 800,  legendary: 1200 },
+  abs:       { beginner: 0, novice: 80,   intermediate: 200,  advanced: 400,  elite: 650,  legendary: 1000 },
+};
+
+// Map each MuscleGroup to one of the threshold categories above.
+const MUSCLE_CATEGORY: Record<MuscleGroup, string> = {
+  Legs: 'legs',
+  Hamstrings: 'legs',
+  Calves: 'legs',
+  Abductors: 'legs',
+  Adductors: 'legs',
+  Back: 'back',
+  Chest: 'chest',
+  Shoulders: 'shoulders',
+  Biceps: 'arms',
+  Triceps: 'arms',
+  Forearms: 'arms',
+  Abs: 'abs',
+  Core: 'abs',
+};
+
+export function getMuscleThresholds(muscle: MuscleGroup): MuscleThreshold {
+  return MUSCLE_THRESHOLDS[MUSCLE_CATEGORY[muscle]] ?? MUSCLE_THRESHOLDS.chest;
+}
+
+/**
+ * Returns the rank tier for a muscle based on its own threshold scale.
+ */
+export function getMuscleRankFor(muscle: MuscleGroup, score: number): TierInfo {
+  const t = getMuscleThresholds(muscle);
+  const thresholds: { threshold: number; tier: TierInfo }[] = [
+    { threshold: t.legendary,     tier: RANK_TIERS[5] },
+    { threshold: t.elite,         tier: RANK_TIERS[4] },
+    { threshold: t.advanced,      tier: RANK_TIERS[3] },
+    { threshold: t.intermediate,  tier: RANK_TIERS[2] },
+    { threshold: t.novice,        tier: RANK_TIERS[1] },
+    { threshold: t.beginner,      tier: RANK_TIERS[0] },
+  ];
+  for (const { threshold, tier } of thresholds) {
+    if (score >= threshold) return tier;
   }
   return RANK_TIERS[0];
 }
@@ -187,7 +252,7 @@ export function calculateOverallUserRank(
       peakReps: peak.reps,
       peakExercise: peak.exerciseName,
       peakDate: peak.dateKey,
-      tier: getMuscleRank(peak.score),
+      tier: getMuscleRankFor(muscle, peak.score),
     };
   });
 
