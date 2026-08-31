@@ -1,5 +1,4 @@
 import type { ExerciseLog, UserId } from '../types';
-import { EXERCISE_MUSCLE_MAP } from './calculations';
 
 // ============================================================
 // PEAK SET PERFORMANCE SCORE
