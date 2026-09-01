@@ -7,6 +7,8 @@ import { formatDateKey, getLastWeekDateKey } from '../utils/dates';
 import WorkoutCard from '../components/today/WorkoutCard';
 import AddExerciseModal from '../components/today/AddExerciseModal';
 import RestTimerBar from '../components/today/RestTimerBar';
+import WorkoutCoach from '../components/today/WorkoutCoach';
+import { buildCoachInsights } from '../utils/coach';
 import { useScrollReveal } from '../hooks/useScrollReveal';
 
 const DAY_NAMES = [
@@ -16,8 +18,16 @@ const DAY_NAMES = [
 
 const DAY_ABBREVS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-function getWeekDays(date: Date): { date: Date; dateKey: string; dayName: string; dayAbbrev: string; dayNum: number; isToday: boolean; isPast: boolean }[] {
-  const dayOfWeek = date.getDay();
+// Build a concise training headline from a day's muscle groups,
+// e.g. ["Chest","Back","Shoulders","Triceps","Biceps"] -> "Chest & Back Day".
+function formatDayTitle(groups: string[]): string {
+  const meaningful = groups.filter((g) => g !== 'Rest');
+  if (meaningful.length === 0) return 'Recovery Day';
+  if (meaningful.length <= 2) return meaningful.join(' & ') + ' Day';
+  return meaningful.slice(0, 2).join(' & ') + ' Day';
+}
+
+function getWeekDays(date: Date): { date: Date; dateKey: string; dayName: string; dayAbbrev: string; dayNum: number; isToday: boolean; isPast: boolean }[] {  const dayOfWeek = date.getDay();
   const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
   const monday = new Date(date);
   monday.setDate(date.getDate() + mondayOffset);
@@ -47,7 +57,7 @@ function getWeekDays(date: Date): { date: Date; dateKey: string; dayName: string
 
 export default function TodayPage() {
   const { activeUser } = useUser();
-  const { getDayWorkout, updateDayExercises, deletedExercises, deleteExerciseFromDay, moveExercise, toggleCompleted } = useWorkout();
+  const { getDayWorkout, updateDayExercises, deletedExercises, deleteExerciseFromDay, moveExercise, toggleCompleted, workoutData } = useWorkout();
   const { getScheduleForDay } = useSchedule();
   const [showAddModal, setShowAddModal] = useState(false);
 
@@ -126,6 +136,12 @@ export default function TodayPage() {
     .filter((i) => !deletedIndices.includes(i));
   const hasStarted = displayExercises.length > 0;
   const isCompleted = todayWorkout?.completed ?? false;
+
+  // Offline coach recap computed purely from local workout data.
+  const coach = useMemo(
+    () => buildCoachInsights(workoutData, activeUser, dateKey),
+    [workoutData, activeUser, dateKey],
+  );
 
   // Scroll reveal refs
   const tomorrowRef = useScrollReveal<HTMLDivElement>();
@@ -242,7 +258,7 @@ export default function TodayPage() {
           {dayName}{!isToday ? ' (Make-up)' : ''}
         </p>
         <h2 className="text-xl font-bold mb-1 relative z-10" style={{ color: '#f1f5f9', letterSpacing: '-0.03em' }}>
-          {schedule.isRestDay ? 'Time to Recover' : 'Kasaint Your Strength'}
+          {schedule.isRestDay ? 'Time to Recover' : formatDayTitle(schedule.muscleGroups)}
         </h2>
         <p className="text-sm relative z-10" style={{ color: 'rgba(148,163,184,0.65)' }}>
           {selectedDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
@@ -298,6 +314,9 @@ export default function TodayPage() {
           </button>
         </div>
       )}
+
+      {/* Offline coach recap — shown after the workout is finished */}
+      {isCompleted && <WorkoutCoach insights={coach} />}
 
       {/* Tomorrow's workout - shown prominently when day is finished */}
       {isCompleted && !tomorrowSchedule.isRestDay && (
