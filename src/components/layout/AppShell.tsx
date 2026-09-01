@@ -1,6 +1,7 @@
 import { Outlet } from 'react-router-dom';
 import Header from './Header';
 import BottomNav from './BottomNav';
+import SwipeNavigator from './SwipeNavigator';
 import RestTimerPopup from '../today/RestTimerPopup';
 
 export default function AppShell() {
@@ -25,7 +26,9 @@ export default function AppShell() {
       <div className="relative z-10">
         <Header />
         <main className="max-w-lg mx-auto px-4 py-4">
-          <Outlet />
+          <SwipeNavigator>
+            <Outlet />
+          </SwipeNavigator>
         </main>
         <BottomNav />
         <RestTimerPopup />
