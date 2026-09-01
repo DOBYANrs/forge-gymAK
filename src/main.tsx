@@ -8,6 +8,11 @@ import { BodyProvider } from './context/BodyContext';
 import { ScheduleProvider } from './context/ScheduleContext';
 import App from './App';
 import './index.css';
+import { migrateLegacyStorageKeys } from './utils/migrate';
+
+// Carry over legacy forge_gym_* localStorage data into kasaint_gym_* keys
+// before any provider reads storage.
+migrateLegacyStorageKeys();
 
 // Restore original URL after redirect (for GitHub Pages / Firebase)
 const redirect = sessionStorage.getItem("redirect");
