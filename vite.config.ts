@@ -9,7 +9,7 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg'],
+      includeAssets: ['favicon.svg', 'kasaint-icon.svg'],
       manifest: {
         name: 'KASAINT Gym Tracker',
         short_name: 'KASAINT',
@@ -23,18 +23,18 @@ export default defineConfig({
         categories: ['health', 'fitness', 'utilities'],
         icons: [
           {
-            src: '/kasaint-gym/favicon.svg',
+            src: '/kasaint-gym/kasaint-icon.svg',
             sizes: '192x192',
             type: 'image/svg+xml',
           },
           {
-            src: '/kasaint-gym/favicon.svg',
+            src: '/kasaint-gym/kasaint-icon.svg',
             sizes: '512x512',
             type: 'image/svg+xml',
           },
           {
-            src: '/kasaint-gym/favicon.svg',
-            sizes: '192x192',
+            src: '/kasaint-gym/kasaint-icon.svg',
+            sizes: '512x512',
             type: 'image/svg+xml',
             purpose: 'maskable',
           },

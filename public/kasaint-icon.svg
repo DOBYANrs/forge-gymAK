@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400">
+  <rect width="400" height="400" fill="#0b0f19"/>
+  <defs>
+    <!-- Outer Glow Filters -->
+    <filter id="purple-glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="6" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+    <filter id="blue-glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="4" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Hexagonal Dark Badge Frame -->
+  <polygon points="200,30 340,110 340,270 200,350 60,270 60,110" fill="#151c2c" stroke="#1e293b" stroke-width="4"/>
+  <polygon points="200,42 328,116 328,264 200,338 72,264 72,116" fill="none" stroke="#7e22ce" stroke-width="2" opacity="0.6"/>
+
+  <!-- 2D ANATOMY VECTOR SILHOUETTE -->
+  <g transform="translate(0, 5)">
+    <!-- FACE FACETS (Shifted down directly onto top of chest/shoulders) -->
+    <g transform="translate(0, 32)">
+      <!-- Cranium / Forehead -->
+      <path d="M188,48 C188,38 212,38 212,48 L208,62 L192,62 Z" fill="#334155" stroke="#0b0f19" stroke-width="1.5"/>
+      <!-- Cheek / Temple Left -->
+      <path d="M184,60 L192,62 L192,74 L182,68 Z" fill="#475569" stroke="#0b0f19" stroke-width="1.5"/>
+      <!-- Cheek / Temple Right -->
+      <path d="M216,60 L208,62 L208,74 L218,68 Z" fill="#475569" stroke="#0b0f19" stroke-width="1.5"/>
+      <!-- Nose & Eye Ridge -->
+      <path d="M192,62 L200,60 L208,62 L204,76 L200,78 L196,76 Z" fill="#3b82f6" filter="url(#blue-glow)" stroke="#0b0f19" stroke-width="1.5"/>
+      <!-- Jaw Left -->
+      <path d="M182,68 L192,74 L196,86 L186,80 Z" fill="#1e3a8a" stroke="#0b0f19" stroke-width="1.5"/>
+      <!-- Jaw Right -->
+      <path d="M218,68 L208,74 L204,86 L214,80 Z" fill="#1e3a8a" stroke="#0b0f19" stroke-width="1.5"/>
+    </g>
+
+    <!-- Left Deltoid -->
+    <path d="M142,125 C132,135 130,160 136,178 L154,166 L164,138 Z" fill="#7e22ce" filter="url(#purple-glow)" stroke="#0b0f19" stroke-width="2"/>
+    
+    <!-- Right Deltoid -->
+    <path d="M258,125 C268,135 270,160 264,178 L246,166 L236,138 Z" fill="#7e22ce" filter="url(#purple-glow)" stroke="#0b0f19" stroke-width="2"/>
+
+    <!-- Left Pectoral -->
+    <path d="M166,138 L197,142 L196,174 L156,170 C154,155 158,144 166,138 Z" fill="#7e22ce" filter="url(#purple-glow)" stroke="#0b0f19" stroke-width="2"/>
+
+    <!-- Right Pectoral -->
+    <path d="M234,138 L203,142 L204,174 L244,170 C246,155 242,144 234,138 Z" fill="#7e22ce" filter="url(#purple-glow)" stroke="#0b0f19" stroke-width="2"/>
+
+    <!-- Lats -->
+    <path d="M152,175 L162,173 L166,215 L148,198 Z" fill="#1e3a8a" stroke="#0b0f19" stroke-width="2"/>
+    <path d="M248,175 L238,173 L234,215 L252,198 Z" fill="#1e3a8a" stroke="#0b0f19" stroke-width="2"/>
+
+    <!-- Biceps -->
+    <path d="M136,180 L152,172 L146,210 L134,195 Z" fill="#3b82f6" stroke="#0b0f19" stroke-width="2"/>
+    <path d="M264,180 L248,172 L254,210 L266,195 Z" fill="#3b82f6" stroke="#0b0f19" stroke-width="2"/>
+
+    <!-- Abdominal Grid (Upper 2-Pack) -->
+    <path d="M168,178 L197,178 L196,202 L168,200 Z" fill="#3b82f6" filter="url(#blue-glow)" stroke="#0b0f19" stroke-width="2"/>
+    <path d="M232,178 L203,178 L204,202 L232,200 Z" fill="#3b82f6" filter="url(#blue-glow)" stroke="#0b0f19" stroke-width="2"/>
+
+    <!-- Abdominal Grid (Mid 2-Pack) -->
+    <path d="M170,204 L197,204 L196,228 L172,226 Z" fill="#1e3a8a" stroke="#0b0f19" stroke-width="2"/>
+    <path d="M230,204 L203,204 L204,228 L228,226 Z" fill="#1e3a8a" stroke="#0b0f19" stroke-width="2"/>
+
+    <!-- Abdominal Grid (Lower 2-Pack) -->
+    <path d="M174,230 L197,230 L196,255 L180,250 Z" fill="#1e3a8a" stroke="#0b0f19" stroke-width="2"/>
+    <path d="M226,230 L203,230 L204,255 L220,250 Z" fill="#1e3a8a" stroke="#0b0f19" stroke-width="2"/>
+
+    <!-- Center Symmetry Axis -->
+    <line x1="200" y1="70" x2="200" y2="260" stroke="#ffffff" stroke-width="1.5" opacity="0.4" stroke-dasharray="3,3"/>
+  </g>
+
+  <!-- Typography -->
+  <text x="200" y="305" text-anchor="middle" fill="#ffffff" font-family="'Inter', system-ui, sans-serif" font-size="24" font-weight="900" letter-spacing="6">KASAINT</text>
+  <text x="200" y="322" text-anchor="middle" fill="#7e22ce" font-family="'Inter', system-ui, sans-serif" font-size="9" font-weight="700" letter-spacing="3">ANATOMY RANK SYSTEM</text>
+</svg>
