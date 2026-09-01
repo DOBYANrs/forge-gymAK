@@ -3,8 +3,13 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import gsap from 'gsap';
 import { getDaySchedule } from '../../data/schedule';
-import { getMuscleRankFor, type MuscleGroup, type MuscleRankResult } from '../../utils/ranking';
+import type { MuscleRankResult, MuscleGroup } from '../../utils/ranking';
 import type { MuscleScore } from '../../utils/muscleScoring';
+import {
+  applyRankColors,
+  pulseMuscles,
+  EXPOSURE,
+} from '../../utils/muscleModel';
 
 interface CinematicIntroProps {
   muscleRanks: MuscleRankResult[];
@@ -22,27 +27,6 @@ function getDayType(): string {
   return schedule.dayOfWeek;
 }
 
-// Map the GLB muscle-mesh names to our muscle-group categories for rank coloring.
-// null => render a neutral skin tone (not a scorable muscle).
-const MESH_TO_MUSCLE: Record<string, MuscleGroup | null> = {
-  chest: 'Chest',
-  shoulders: 'Shoulders',
-  lats: 'Back',
-  upper_back: 'Back',
-  glutes: 'Legs',
-  lower_back: 'Back',
-  triceps: 'Triceps',
-  quads: 'Legs',
-  hamstings: 'Hamstrings',
-  adductor: 'Adductors',
-  calves: 'Calves',
-  biceps: 'Biceps',
-  abs: 'Abs',
-  forearms: 'Forearms',
-  neck: null,
-  main_body001: null,
-};
-
 // The physically largest muscle trained on each day (headline of the plan).
 // side: which side of the model to present before diving in.
 const DAY_PRIMARY: Record<string, { mesh: string; label: string; side: 'front' | 'back' }> = {
@@ -52,9 +36,6 @@ const DAY_PRIMARY: Record<string, { mesh: string; label: string; side: 'front' |
   friday: { mesh: 'quads', label: 'Quads', side: 'front' },
   saturday: { mesh: 'chest', label: 'Chest', side: 'front' },
 };
-
-const NEUTRAL_COLOR = 0x171a24; // base skin
-const EMISSIVE_INTENSITY = 0.35;
 
 export default function CinematicIntro({
   muscleRanks,
@@ -108,26 +89,30 @@ export default function CinematicIntro({
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setClearColor(0x050508, 1);
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 2.2;
+    renderer.toneMappingExposure = EXPOSURE;
     container.appendChild(renderer.domElement);
 
     // ===== LIGHTING =====
-    const ambientLight = new THREE.AmbientLight(0xffffff, 1.6);
+    const ambientLight = new THREE.AmbientLight(0xbfc8ff, 1.5);
     scene.add(ambientLight);
 
-    const spotLight = new THREE.SpotLight(0xffffff, 4.0);
-    spotLight.position.set(2, 5, 4);
-    spotLight.angle = Math.PI / 5;
-    spotLight.penumbra = 0.3;
-    scene.add(spotLight);
+    const keyLight = new THREE.SpotLight(0xffe2b3, 6.0);
+    keyLight.position.set(2, 5, 4);
+    keyLight.angle = Math.PI / 5;
+    keyLight.penumbra = 0.3;
+    scene.add(keyLight);
 
-    const rimLight = new THREE.DirectionalLight(0xff5e00, 1.2);
-    rimLight.position.set(-3, 2, -4);
-    scene.add(rimLight);
-
-    const fillLight = new THREE.DirectionalLight(0x88aaff, 1.0);
-    fillLight.position.set(-2, 3, 2);
+    const fillLight = new THREE.DirectionalLight(0x88ccff, 1.3);
+    fillLight.position.set(-3, 2, 2);
     scene.add(fillLight);
+
+    const rimWarm = new THREE.DirectionalLight(0xff5e00, 1.4);
+    rimWarm.position.set(-2, 2.5, -4);
+    scene.add(rimWarm);
+
+    const rimCool = new THREE.DirectionalLight(0x22d3ee, 1.1);
+    rimCool.position.set(3, 1.5, -3);
+    scene.add(rimCool);
 
     scene.fog = new THREE.FogExp2(0x050508, 0.06);
 
@@ -177,39 +162,8 @@ export default function CinematicIntro({
 
         scene.add(model);
 
-        // ===== COLOR EACH MUSCLE BY ITS RANK TIER =====
-        const rankMap = rankMapRef.current;
-        model.traverse((child) => {
-          if (child instanceof THREE.Mesh && child.geometry) {
-            const mat = Array.isArray(child.material)
-              ? child.material[0]
-              : child.material;
-            if (!(mat instanceof THREE.MeshStandardMaterial)) return;
-
-            const cloned = mat.clone();
-            const muscle = MESH_TO_MUSCLE[child.name];
-            if (muscle) {
-              const rank = rankMap.get(muscle);
-              // If no data (peakScore 0), fall back to generic Beginner tier.
-              const tier = rank && rank.peakScore > 0
-                ? rank.tier
-                : getMuscleRankFor(muscle, 0);
-              const color = new THREE.Color(tier.color);
-              cloned.color.copy(color);
-              cloned.emissive.copy(color);
-              cloned.emissiveIntensity = EMISSIVE_INTENSITY;
-              cloned.metalness = 0.15;
-              cloned.roughness = 0.55;
-            } else {
-              cloned.color.set(NEUTRAL_COLOR);
-              cloned.emissive.set(NEUTRAL_COLOR);
-              cloned.emissiveIntensity = 0.06;
-              cloned.metalness = 0.3;
-              cloned.roughness = 0.7;
-            }
-            child.material = cloned;
-          }
-        });
+        // ===== COLOR EACH MUSCLE BY ITS RANK TIER (shared with 360 page) =====
+        const muscleMats = applyRankColors(model, rankMapRef.current);
 
         setPhase('spin');
 
@@ -242,7 +196,7 @@ export default function CinematicIntro({
         // === Phase 1: 360° spin showing every muscle group colored by rank ===
         tl.call(() => setDayLabel('YOUR PHYSIQUE'), [], 0);
         tl.to(ambientLight, { intensity: 2.2, duration: 2.5, ease: 'power2.inOut' }, 0);
-        tl.to(spotLight, { intensity: 5.5, duration: 2.5, ease: 'power2.inOut' }, 0);
+        tl.to(keyLight, { intensity: 8.5, duration: 2.5, ease: 'power2.inOut' }, 0);
         tl.to(model.rotation, { y: Math.PI * 2, duration: 2.5, ease: 'power2.inOut' }, 0);
         tl.fromTo(camera.position, { z: 5, y: 0.3 }, { z: 3.6, y: 0.15, duration: 2.5, ease: 'power2.inOut' }, 0);
 
@@ -273,7 +227,7 @@ export default function CinematicIntro({
             { x: center.x, y: center.y, z: center.z + dist, duration: 1.6, ease: 'power3.in' },
             3.5,
           );
-          tl.to(spotLight, { angle: Math.PI / 12, intensity: 8.0, duration: 1.6, ease: 'power3.in' }, 3.5);
+          tl.to(keyLight, { angle: Math.PI / 12, intensity: 11.0, duration: 1.6, ease: 'power3.in' }, 3.5);
           tl.call(() => setDayLabel(primary.label.toUpperCase()), [], 3.5);
         } else {
           // === REST DAY fallback: pull in to the head/center ===
@@ -281,8 +235,8 @@ export default function CinematicIntro({
           tl.call(() => setPhase('zoom'), [], 3.5);
           tl.to(focal, { x: 0, y: 1.0, z: 0, duration: 1.6, ease: 'power3.in' }, 3.5);
           tl.to(camera.position, { x: 0, y: 0.9, z: 1.2, duration: 1.6, ease: 'power3.in' }, 3.5);
-          tl.to(spotLight, { angle: Math.PI / 12, intensity: 7.0, duration: 1.6, ease: 'power3.in' }, 3.5);
-          tl.to(rimLight, { intensity: 2.2, duration: 1.2, ease: 'power2.out' }, 3.5);
+          tl.to(keyLight, { angle: Math.PI / 12, intensity: 10.0, duration: 1.6, ease: 'power3.in' }, 3.5);
+          tl.to(rimWarm, { intensity: 2.4, duration: 1.2, ease: 'power2.out' }, 3.5);
           tl.to(ambientLight.color, { r: 0.75, g: 0.72, b: 1.0, duration: 1.0, ease: 'power2.out' }, 3.5);
         }
 
@@ -314,6 +268,8 @@ export default function CinematicIntro({
           }
           pPos.needsUpdate = true;
           particleMat.opacity = 0.3 + Math.sin(time * 2) * 0.2;
+
+          pulseMuscles(muscleMats, time, 0.45, 0.25);
 
           camera.lookAt(focal);
 

@@ -2,7 +2,12 @@ import { useRef, useEffect, useState } from 'react';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import type { MuscleRankResult } from '../../utils/ranking';
-import { applyRankColors, toRankMap } from '../../utils/muscleModel';
+import {
+  applyRankColors,
+  toRankMap,
+  pulseMuscles,
+  EXPOSURE,
+} from '../../utils/muscleModel';
 
 interface SideLabel {
   name: string;
@@ -20,7 +25,9 @@ interface Muscle360ViewerProps {
 }
 
 const BODY_OFFSET_X = 0.9;
-const AUTO_SPIN_SPEED = 0.0042;
+// Each body drifts on its own axis at its own speed for an organic feel.
+const AUTO_SPIN_A = 0.0042;
+const AUTO_SPIN_B = 0.0054;
 
 export default function Muscle360Viewer({
   labelA,
@@ -33,7 +40,7 @@ export default function Muscle360Viewer({
   const cleanupRef = useRef<(() => void) | null>(null);
   const [loadPercent, setLoadPercent] = useState(0);
   const [ready, setReady] = useState(false);
-  const [dragging, setDragging] = useState(false);
+  const [hint, setHint] = useState('Drag each body to rotate');
 
   const ranksARef = useRef(ranksA);
   const ranksBRef = useRef(ranksB);
@@ -60,33 +67,38 @@ export default function Muscle360Viewer({
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setClearColor(0x050508, 1);
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 2.2;
+    renderer.toneMappingExposure = EXPOSURE;
     container.appendChild(renderer.domElement);
 
-    scene.add(new THREE.AmbientLight(0xffffff, 1.6));
+    // ===== Lighting: warm key + cool fill + colored rims =====
+    scene.add(new THREE.AmbientLight(0xbfc8ff, 1.5));
 
-    const spotLight = new THREE.SpotLight(0xffffff, 4.0);
-    spotLight.position.set(2, 5, 4);
-    spotLight.angle = Math.PI / 5;
-    spotLight.penumbra = 0.3;
-    scene.add(spotLight);
+    const keyLight = new THREE.SpotLight(0xffe2b3, 6.0);
+    keyLight.position.set(2, 5, 4);
+    keyLight.angle = Math.PI / 5;
+    keyLight.penumbra = 0.3;
+    scene.add(keyLight);
 
-    const rimLight = new THREE.DirectionalLight(0xff5e00, 1.2);
-    rimLight.position.set(-3, 2, -4);
-    scene.add(rimLight);
-
-    const fillLight = new THREE.DirectionalLight(0x88aaff, 1.0);
-    fillLight.position.set(-2, 3, 2);
+    const fillLight = new THREE.DirectionalLight(0x88ccff, 1.3);
+    fillLight.position.set(-3, 2, 2);
     scene.add(fillLight);
+
+    const rimWarm = new THREE.DirectionalLight(0xff5e00, 1.4);
+    rimWarm.position.set(-2, 2.5, -4);
+    scene.add(rimWarm);
+
+    const rimCool = new THREE.DirectionalLight(0x22d3ee, 1.1);
+    rimCool.position.set(3, 1.5, -3);
+    scene.add(rimCool);
 
     scene.fog = new THREE.FogExp2(0x050508, 0.06);
 
     const ground = new THREE.Mesh(
-      new THREE.CircleGeometry(4, 48),
+      new THREE.CircleGeometry(4.4, 48),
       new THREE.MeshStandardMaterial({
-        color: 0xffffff,
+        color: 0x7c8cff,
         transparent: true,
-        opacity: 0.05,
+        opacity: 0.06,
         roughness: 1,
         metalness: 0,
       }),
@@ -95,8 +107,11 @@ export default function Muscle360Viewer({
     ground.position.y = -1.05;
     scene.add(ground);
 
-    const bodies = new THREE.Group();
-    scene.add(bodies);
+    // Two independent rotation groups, one per user.
+    const groupA = new THREE.Group();
+    const groupB = new THREE.Group();
+    scene.add(groupA);
+    scene.add(groupB);
 
     const loader = new GLTFLoader();
     loader.load(
@@ -110,39 +125,51 @@ export default function Muscle360Viewer({
         const maxDim = Math.max(size.x, size.y, size.z);
         const scale = 2.0 / maxDim;
 
-        const makeBody = (offsetX: number, rankMap: ReturnType<typeof toRankMap>) => {
+        const makeBody = (rankMap: ReturnType<typeof toRankMap>) => {
           const body = base.clone(true);
           body.scale.setScalar(scale);
           body.position.sub(center.clone().multiplyScalar(scale));
           body.position.y += 0.2;
-          body.position.x += offsetX;
-          applyRankColors(body, rankMap);
-          bodies.add(body);
+          body.updateMatrixWorld(true);
+          const mats = applyRankColors(body, rankMap);
+          return { body, mats };
         };
 
-        makeBody(-BODY_OFFSET_X, toRankMap(ranksARef.current));
-        makeBody(BODY_OFFSET_X, toRankMap(ranksBRef.current));
+        const bodyAObj = makeBody(toRankMap(ranksARef.current));
+        const bodyBObj = makeBody(toRankMap(ranksBRef.current));
+        bodyAObj.body.position.x -= BODY_OFFSET_X;
+        bodyBObj.body.position.x += BODY_OFFSET_X;
+        groupA.add(bodyAObj.body);
+        groupB.add(bodyBObj.body);
 
         setReady(true);
 
-        // ===== Pointer drag to rotate (both together) =====
+        // ===== Independent rotation: grab the side of the body you want =====
         let isDragging = false;
         let prevX = 0;
+        let targetGroup: THREE.Group | null = null;
+
+        const rotationRoot = (el: number) => (el < 0 ? groupA : groupB);
 
         const onDown = (clientX: number) => {
+          // Which side (relative to the canvas center) determines which body.
+          const rect = renderer.domElement.getBoundingClientRect();
+          const local = (clientX - rect.left) / rect.width - 0.5;
+          targetGroup = rotationRoot(local);
           isDragging = true;
           prevX = clientX;
-          setDragging(true);
+          setHint('Rotating…');
         };
         const onMove = (clientX: number) => {
-          if (!isDragging) return;
+          if (!isDragging || !targetGroup) return;
           const dx = clientX - prevX;
           prevX = clientX;
-          bodies.rotation.y += dx * 0.008;
+          targetGroup.rotation.y += dx * 0.008;
         };
         const onUp = () => {
           isDragging = false;
-          setDragging(false);
+          targetGroup = null;
+          setHint('Drag each body to rotate');
         };
 
         const mousedown = (e: MouseEvent) => onDown(e.clientX);
@@ -167,13 +194,19 @@ export default function Muscle360Viewer({
         canvas.style.touchAction = 'none';
         canvas.style.cursor = 'grab';
 
-        // ===== Render loop with idle auto-spin =====
+        // ===== Render loop: independent auto-spin + glow pulse =====
         let animId: number;
+        let time = 0;
         const animate = () => {
           animId = requestAnimationFrame(animate);
-          if (!isDragging) {
-            bodies.rotation.y += AUTO_SPIN_SPEED;
-          }
+          time += 0.016;
+
+          if (targetGroup !== groupA) groupA.rotation.y += AUTO_SPIN_A;
+          if (targetGroup !== groupB) groupB.rotation.y += AUTO_SPIN_B;
+
+          pulseMuscles(bodyAObj.mats, time);
+          pulseMuscles(bodyBObj.mats, time);
+
           camera.lookAt(focal);
           renderer.render(scene, camera);
         };
@@ -236,8 +269,8 @@ export default function Muscle360Viewer({
 
       {ready && (
         <div className="absolute bottom-3 left-0 right-0 text-center pointer-events-none">
-          <p className="text-[9px] font-semibold uppercase tracking-[0.3em]" style={{ color: 'rgba(148,163,184,0.5)' }}>
-            {dragging ? 'Rotating' : 'Drag to rotate 360°'}
+          <p className="text-[9px] font-semibold uppercase tracking-[0.3em]" style={{ color: 'rgba(148,163,184,0.55)' }}>
+            {hint}
           </p>
         </div>
       )}
