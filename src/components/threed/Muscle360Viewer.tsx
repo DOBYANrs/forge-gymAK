@@ -40,7 +40,7 @@ export default function Muscle360Viewer({
   const cleanupRef = useRef<(() => void) | null>(null);
   const [loadPercent, setLoadPercent] = useState(0);
   const [ready, setReady] = useState(false);
-  const [hint, setHint] = useState('Drag each body to rotate');
+  const [hint, setHint] = useState('Drag to rotate both');
 
   const ranksARef = useRef(ranksA);
   const ranksBRef = useRef(ranksB);
@@ -151,32 +151,26 @@ export default function Muscle360Viewer({
 
         setReady(true);
 
-        // ===== Independent rotation: grab the side of the body you want =====
+        // ===== Drag: spin BOTH bodies together, each on its own axis =====
         let isDragging = false;
         let prevX = 0;
-        let targetSpin: THREE.Group | null = null;
-
-        const getSpin = (el: number) => (el < 0 ? spinGroupA : spinGroupB);
 
         const onDown = (clientX: number) => {
-          // Which side (relative to the canvas center) determines which body.
-          const rect = renderer.domElement.getBoundingClientRect();
-          const local = (clientX - rect.left) / rect.width - 0.5;
-          targetSpin = getSpin(local);
           isDragging = true;
           prevX = clientX;
           setHint('Rotating…');
         };
         const onMove = (clientX: number) => {
-          if (!isDragging || !targetSpin) return;
+          if (!isDragging) return;
           const dx = clientX - prevX;
           prevX = clientX;
-          targetSpin.rotation.y += dx * 0.008;
+          // Both spin by the same amount, but each around its own standing axis.
+          spinGroupA.rotation.y += dx * 0.008;
+          spinGroupB.rotation.y += dx * 0.008;
         };
         const onUp = () => {
           isDragging = false;
-          targetSpin = null;
-          setHint('Drag each body to rotate');
+          setHint('Drag to rotate both');
         };
 
         const mousedown = (e: MouseEvent) => onDown(e.clientX);
@@ -208,8 +202,10 @@ export default function Muscle360Viewer({
           animId = requestAnimationFrame(animate);
           time += 0.016;
 
-          if (targetSpin !== spinGroupA) spinGroupA.rotation.y += AUTO_SPIN_A;
-          if (targetSpin !== spinGroupB) spinGroupB.rotation.y += AUTO_SPIN_B;
+          if (!isDragging) {
+            spinGroupA.rotation.y += AUTO_SPIN_A;
+            spinGroupB.rotation.y += AUTO_SPIN_B;
+          }
 
           pulseMuscles(bodyAObj.mats, time);
           pulseMuscles(bodyBObj.mats, time);
