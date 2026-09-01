@@ -4,6 +4,7 @@ const tabs = [
   { to: '/', label: 'Today', icon: '🏋️' },
   { to: '/schedule', label: 'Schedule', icon: '📋' },
   { to: '/ranking', label: 'Rank', icon: '🏆' },
+  { to: '/muscle360', label: '360', icon: '🌀' },
   { to: '/social', label: 'Social', icon: '🔥' },
   { to: '/progress', label: 'Progress', icon: '📈' },
 ];

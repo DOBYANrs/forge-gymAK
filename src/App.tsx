@@ -13,6 +13,7 @@ const ProgressPage = lazy(() => import('./pages/ProgressPage'));
 const BodyPage = lazy(() => import('./pages/BodyPage'));
 const SocialPage = lazy(() => import('./pages/SocialPage'));
 const RankingPage = lazy(() => import('./pages/RankingPage'));
+const Muscle360Page = lazy(() => import('./pages/Muscle360Page'));
 
 function PageLoader() {
   return (
@@ -74,6 +75,11 @@ function AppContent() {
         <Route path="ranking" element={
           <Suspense fallback={<PageLoader />}>
             <RankingPage />
+          </Suspense>
+        } />
+        <Route path="muscle360" element={
+          <Suspense fallback={<PageLoader />}>
+            <Muscle360Page />
           </Suspense>
         } />
       </Route>
