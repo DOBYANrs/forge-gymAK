@@ -107,11 +107,20 @@ export default function Muscle360Viewer({
     ground.position.y = -1.05;
     scene.add(ground);
 
-    // Two independent rotation groups, one per user.
-    const groupA = new THREE.Group();
-    const groupB = new THREE.Group();
-    scene.add(groupA);
-    scene.add(groupB);
+    // Two independent spin units, one per user. An outer "offset" group holds
+    // each body's standing position; an inner "spin" group is rotated so the
+    // body spins in place on its own axis (like Earth on its axis) without
+    // orbiting the shared center.
+    const offsetGroupA = new THREE.Group();
+    const offsetGroupB = new THREE.Group();
+    offsetGroupA.position.x = -BODY_OFFSET_X;
+    offsetGroupB.position.x = BODY_OFFSET_X;
+    const spinGroupA = new THREE.Group();
+    const spinGroupB = new THREE.Group();
+    offsetGroupA.add(spinGroupA);
+    offsetGroupB.add(spinGroupB);
+    scene.add(offsetGroupA);
+    scene.add(offsetGroupB);
 
     const loader = new GLTFLoader();
     loader.load(
@@ -137,38 +146,36 @@ export default function Muscle360Viewer({
 
         const bodyAObj = makeBody(toRankMap(ranksARef.current));
         const bodyBObj = makeBody(toRankMap(ranksBRef.current));
-        bodyAObj.body.position.x -= BODY_OFFSET_X;
-        bodyBObj.body.position.x += BODY_OFFSET_X;
-        groupA.add(bodyAObj.body);
-        groupB.add(bodyBObj.body);
+        spinGroupA.add(bodyAObj.body);
+        spinGroupB.add(bodyBObj.body);
 
         setReady(true);
 
         // ===== Independent rotation: grab the side of the body you want =====
         let isDragging = false;
         let prevX = 0;
-        let targetGroup: THREE.Group | null = null;
+        let targetSpin: THREE.Group | null = null;
 
-        const rotationRoot = (el: number) => (el < 0 ? groupA : groupB);
+        const getSpin = (el: number) => (el < 0 ? spinGroupA : spinGroupB);
 
         const onDown = (clientX: number) => {
           // Which side (relative to the canvas center) determines which body.
           const rect = renderer.domElement.getBoundingClientRect();
           const local = (clientX - rect.left) / rect.width - 0.5;
-          targetGroup = rotationRoot(local);
+          targetSpin = getSpin(local);
           isDragging = true;
           prevX = clientX;
           setHint('Rotating…');
         };
         const onMove = (clientX: number) => {
-          if (!isDragging || !targetGroup) return;
+          if (!isDragging || !targetSpin) return;
           const dx = clientX - prevX;
           prevX = clientX;
-          targetGroup.rotation.y += dx * 0.008;
+          targetSpin.rotation.y += dx * 0.008;
         };
         const onUp = () => {
           isDragging = false;
-          targetGroup = null;
+          targetSpin = null;
           setHint('Drag each body to rotate');
         };
 
@@ -201,8 +208,8 @@ export default function Muscle360Viewer({
           animId = requestAnimationFrame(animate);
           time += 0.016;
 
-          if (targetGroup !== groupA) groupA.rotation.y += AUTO_SPIN_A;
-          if (targetGroup !== groupB) groupB.rotation.y += AUTO_SPIN_B;
+          if (targetSpin !== spinGroupA) spinGroupA.rotation.y += AUTO_SPIN_A;
+          if (targetSpin !== spinGroupB) spinGroupB.rotation.y += AUTO_SPIN_B;
 
           pulseMuscles(bodyAObj.mats, time);
           pulseMuscles(bodyBObj.mats, time);

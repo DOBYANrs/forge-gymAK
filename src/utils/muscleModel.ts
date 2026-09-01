@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { getMuscleRankFor, type MuscleGroup, type MuscleRankResult } from './ranking';
+import type { MuscleGroup, MuscleRankResult } from './ranking';
 
 // Map each GLB muscle-mesh name to its muscle-group category for rank coloring.
 // null => the uncolored/skin parts (not a scorable muscle).
@@ -65,11 +65,10 @@ export function applyRankColors(
 
     const cloned = mat.clone();
     const muscle = MESH_TO_MUSCLE[child.name];
-    if (muscle) {
-      const rank = rankMap.get(muscle);
-      // No data (peakScore 0) fall back to generic Beginner tier.
-      const tier = rank && rank.peakScore > 0 ? rank.tier : getMuscleRankFor(muscle, 0);
-      const color = new THREE.Color(tier.color);
+    const rank = muscle ? rankMap.get(muscle) : undefined;
+    if (muscle && rank && rank.peakScore > 0) {
+      // Muscle with real training data -> show its rank tier color.
+      const color = new THREE.Color(rank.tier.color);
       cloned.color.copy(color);
       cloned.emissive.copy(color);
       cloned.emissiveIntensity = EMISSIVE_INTENSITY;
@@ -77,6 +76,8 @@ export function applyRankColors(
       cloned.roughness = MUSCLE_ROUGHNESS;
       muscleMats.push(cloned);
     } else {
+      // Untrained muscle (or skin part) -> steel-blue skin so it blends cleanly
+      // with the body instead of showing a dull Beginner gray.
       cloned.color.set(NEUTRAL_COLOR);
       cloned.emissive.copy(new THREE.Color(NEUTRAL_COLOR));
       cloned.emissiveIntensity = NEUTRAL_EMISSIVE_INTENSITY;
