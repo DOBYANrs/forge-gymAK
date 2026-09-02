@@ -1,7 +1,8 @@
 import { useMemo } from 'react';
 import { useUser } from '../context/UserContext';
 import { useWorkout } from '../context/WorkoutContext';
-import { calculateOverallUserRank, RANK_TIERS, MUSCLE_THRESHOLDS, getTodayActivatedMuscles } from '../utils/ranking';
+import { calculateOverallUserRank, getTodayActivatedMuscles } from '../utils/ranking';
+import { COMPOUND_LIFTS } from '../utils/tierEngine';
 import RankBodyMap from '../components/progress/RankBodyMap';
 
 export default function RankingPage() {
@@ -18,7 +19,7 @@ export default function RankingPage() {
     [workoutData, activeUser],
   );
 
-  const { overallRank, overallTier, averageLevel, muscleRanks } = rankResult;
+  const { overallRank, overallTier, averageLevel, overallZ, liftResults, muscleRanks } = rankResult;
 
   return (
     <div className="space-y-4 page-enter">
@@ -38,7 +39,7 @@ export default function RankingPage() {
           {overallRank}
         </p>
         <p className="text-sm font-bold" style={{ color: overallTier.color }}>
-          Tier Point Average: {averageLevel.toFixed(1)} / 5.0
+          Median Z: {typeof overallZ === 'number' ? overallZ.toFixed(2) : '—'} · Tier Avg: {averageLevel.toFixed(1)} / 6.0
         </p>
       </div>
 
@@ -53,54 +54,62 @@ export default function RankingPage() {
         <RankBodyMap muscleRanks={muscleRanks} activeToday={activeToday} />
       </div>
 
-      {/* Muscle-Specific Threshold Matrix */}
+      {/* Scientific Session Report */}
       <div
         className="rounded-2xl p-4"
         style={{ background: 'var(--bg-surface)', border: 'var(--border-subtle)' }}
       >
-        <p className="text-xs font-semibold mb-1" style={{ color: 'var(--text-muted)' }}>Muscle-Specific Rank Thresholds</p>
-        <p className="text-[9px] mb-3" style={{ color: 'var(--text-muted)' }}>Points = Peak Set (Weight × Reps). Each muscle uses its own boundaries.</p>
-        <div className="grid grid-cols-3 gap-2">
-          {[...RANK_TIERS].reverse().map((tier) => (
-            <div
-              key={tier.name}
-              className="rounded-xl p-2 text-center"
-              style={{
-                background: `${tier.color}10`,
-                border: `1px solid ${tier.color}25`,
-              }}
-            >
-              <div className="w-3.5 h-3.5 rounded-full mx-auto mb-1" style={{ background: tier.color, boxShadow: tier.cssGlow }} />
-              <p className="text-[10px] font-bold" style={{ color: tier.color }}>{tier.name}</p>
-            </div>
-          ))}
-        </div>
-        <div className="mt-3 overflow-x-auto">
-          <table className="w-full text-[9px]">
-            <thead>
-              <tr style={{ color: 'var(--text-muted)' }}>
-                <th className="text-left font-semibold pb-1">Muscle</th>
-                {RANK_TIERS.slice(1).map((t) => (
-                  <th key={t.name} className="font-semibold pb-1" style={{ color: t.color }}>{t.name}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {(['Legs', 'Back', 'Chest', 'Shoulders', 'Arms', 'Abs / Core'] as const).map((label) => {
-                const key = label === 'Legs' ? 'legs' : label === 'Back' ? 'back' : label === 'Chest' ? 'chest' : label === 'Shoulders' ? 'shoulders' : label === 'Arms' ? 'arms' : 'abs';
-                const th = MUSCLE_THRESHOLDS[key];
-                return (
-                  <tr key={label} style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-                    <td className="py-1 pr-2 font-semibold" style={{ color: 'rgba(255,255,255,0.8)' }}>{label}</td>
-                    {([th.novice, th.intermediate, th.advanced, th.elite, th.legendary]).map((v, i) => (
-                      <td key={i} className="py-1 text-center" style={{ color: 'var(--text-muted)' }}>{v}+</td>
-                    ))}
+        <p className="text-xs font-semibold mb-1" style={{ color: 'var(--text-muted)' }}>Strength Tier Report</p>
+        <p className="text-[9px] mb-3" style={{ color: 'var(--text-muted)' }}>
+          e1RM = Reps^0.10 × Load · Scaled = e1RM / BW^0.67 · Z = (Scaled − μ) / σ · Overall = median compound Z
+        </p>
+        {liftResults && liftResults.length > 0 ? (
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full text-[9px]">
+                <thead>
+                  <tr style={{ color: 'var(--text-muted)' }}>
+                    <th className="text-left font-semibold pb-1">Lift</th>
+                    <th className="font-semibold pb-1">e1RM</th>
+                    <th className="font-semibold pb-1">Scaled</th>
+                    <th className="font-semibold pb-1">Z</th>
+                    <th className="font-semibold pb-1">Tier</th>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                </thead>
+                <tbody>
+                  {[...liftResults]
+                    .sort((a, b) => Number(COMPOUND_LIFTS.includes(b.lift as never)) - Number(COMPOUND_LIFTS.includes(a.lift as never)))
+                    .map((r) => {
+                      const isCompound = COMPOUND_LIFTS.includes(r.lift as never);
+                      return (
+                        <tr key={r.lift} style={{ borderTop: '1px solid rgba(255,255,255,0.06)', opacity: isCompound ? 1 : 0.45 }}>
+                          <td className="py-1 pr-2 font-semibold" style={{ color: 'rgba(255,255,255,0.85)' }}>
+                            {r.lift}
+                            {r.hasData && <span className="ml-1 font-normal" style={{ color: 'var(--text-muted)' }}>({r.bestLoad}kg×{r.bestReps})</span>}
+                          </td>
+                          <td className="py-1 text-center" style={{ color: 'var(--text-muted)' }}>{r.e1RM.toFixed(1)}</td>
+                          <td className="py-1 text-center" style={{ color: 'var(--text-muted)' }}>{r.scaled.toFixed(2)}</td>
+                          <td className="py-1 text-center" style={{ color: r.z >= 0 ? r.tier.color : 'var(--text-muted)' }}>{r.z.toFixed(2)}</td>
+                          <td className="py-1 text-center">
+                            <span className="px-1.5 py-0.5 rounded-full font-bold" style={{ background: `${r.tier.color}20`, color: r.tier.color }}>
+                              {r.tier.name}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                </tbody>
+              </table>
+            </div>
+            <p className="text-[9px] mt-2" style={{ color: 'var(--text-muted)' }}>
+              Shaded rows are compound lifts (included in the overall median). Isolation moves are dimmed and reported separately.
+            </p>
+          </>
+        ) : (
+          <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
+            No logged sets yet — log lifts to generate your scientific strength report.
+          </p>
+        )}
       </div>
 
       {/* Muscle Group Rankings */}

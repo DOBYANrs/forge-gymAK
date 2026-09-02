@@ -1,4 +1,13 @@
 import type { ExerciseLog, UserId } from '../types';
+import {
+  SCIENTIFIC_TIERS,
+  DEFAULT_PROFILES,
+  computeLiftResults,
+  computeOverallTier,
+  muscleTierFromLifts,
+  type AthleteProfile,
+  type LiftResult,
+} from './tierEngine';
 
 // ============================================================
 // PEAK SET PERFORMANCE SCORE
@@ -11,7 +20,7 @@ export function calculateSetScore(weightKg: number, reps: number): number {
 }
 
 // ============================================================
-// RANK TIERS — based on peak set score thresholds
+// RANK TIERS — the unified 7-tier scientific framework
 // ============================================================
 export interface TierInfo {
   name: string;
@@ -21,14 +30,7 @@ export interface TierInfo {
   cssGlow: string;
 }
 
-export const RANK_TIERS: TierInfo[] = [
-  { name: 'Beginner',     threshold: 0,    level: 0, color: '#6b7280', cssGlow: 'none' },
-  { name: 'Novice',       threshold: 250,  level: 1, color: '#eab308', cssGlow: '0 0 12px rgba(234,179,8,0.3)' },
-  { name: 'Intermediate', threshold: 500,  level: 2, color: '#3b82f6', cssGlow: '0 0 14px rgba(59,130,246,0.35)' },
-  { name: 'Advanced',     threshold: 1000, level: 3, color: '#7e22ce', cssGlow: '0 0 16px rgba(126,34,206,0.5)' },
-  { name: 'Elite',        threshold: 2000, level: 4, color: '#f97316', cssGlow: '0 0 18px rgba(249,115,22,0.45)' },
-  { name: 'Legendary',    threshold: 4000, level: 5, color: '#ef4444', cssGlow: '0 0 22px rgba(239,68,68,0.55)' },
-];
+export const RANK_TIERS: TierInfo[] = SCIENTIFIC_TIERS;
 
 export function getMuscleRank(score: number): TierInfo {
   for (let i = RANK_TIERS.length - 1; i >= 0; i--) {
@@ -212,6 +214,11 @@ export interface MuscleRankResult {
   peakExercise: string;
   peakDate: string;
   tier: TierInfo;
+  // Scientific tier engine data (filled when available)
+  z?: number;
+  scaled?: number;
+  e1RM?: number;
+  lift?: string;
 }
 
 export interface UserRankResult {
@@ -219,6 +226,9 @@ export interface UserRankResult {
   overallTier: TierInfo;
   averageLevel: number;
   muscleRanks: MuscleRankResult[];
+  // Scientific engine data for the session report
+  overallZ?: number;
+  liftResults?: LiftResult[];
 }
 
 function applyPeak(peaks: MusclePeaks, muscle: MuscleGroup, score: number, weight: number, reps: number, exerciseName: string, dateKey: string): void {
@@ -303,11 +313,18 @@ export function calculateMusclePeaks(
 export function calculateOverallUserRank(
   workoutData: Record<string, Record<string, { exercises: ExerciseLog[] } | undefined>>,
   userId: UserId,
+  profile?: AthleteProfile,
 ): UserRankResult {
+  const athleteProfile = profile ?? DEFAULT_PROFILES[userId];
   const peaks = calculateMusclePeaks(workoutData, userId);
+  const liftResults = computeLiftResults(workoutData, userId, athleteProfile);
+  const overall = computeOverallTier(liftResults);
+  const overallTier = RANK_TIERS[overall.tierLevel] ?? RANK_TIERS[0];
 
+  // Build a lookup of each lift's best result for muscle-tier derivation.
   const muscleRanks: MuscleRankResult[] = ALL_MUSCLE_GROUPS.map((muscle) => {
     const peak = peaks[muscle];
+    const tier = muscleTierFromLifts(muscle, liftResults, peak.score > 0);
     return {
       muscle,
       peakScore: peak.score,
@@ -315,42 +332,27 @@ export function calculateOverallUserRank(
       peakReps: peak.reps,
       peakExercise: peak.exerciseName,
       peakDate: peak.dateKey,
-      tier: getMuscleRankFor(muscle, peak.score),
+      tier,
     };
   });
 
   // Sort by peak score descending (muscles with data first)
   muscleRanks.sort((a, b) => b.peakScore - a.peakScore);
 
-  // Overall rank = tier point average across all muscle groups
+  // Overall rank = median Z across compound lifts (from the engine).
+  const overallRank = overall.tierName;
+
+  // averageLevel = mean muscle tier level (0..6) — used by the header gauge.
   const totalLevels = muscleRanks.reduce((sum, mr) => sum + mr.tier.level, 0);
   const averageLevel = ALL_MUSCLE_GROUPS.length > 0
     ? totalLevels / ALL_MUSCLE_GROUPS.length
     : 0;
 
-  let overallRank = 'Beginner';
-  let overallTier = RANK_TIERS[0];
-
-  if (averageLevel >= 4.5) {
-    overallRank = 'Legendary';
-    overallTier = RANK_TIERS[5];
-  } else if (averageLevel >= 3.5) {
-    overallRank = 'Elite';
-    overallTier = RANK_TIERS[4];
-  } else if (averageLevel >= 2.5) {
-    overallRank = 'Advanced';
-    overallTier = RANK_TIERS[3];
-  } else if (averageLevel >= 1.5) {
-    overallRank = 'Intermediate';
-    overallTier = RANK_TIERS[2];
-  } else if (averageLevel >= 0.5) {
-    overallRank = 'Novice';
-    overallTier = RANK_TIERS[1];
-  }
-
   return {
     overallRank,
     overallTier,
+    overallZ: overall.z,
+    liftResults,
     averageLevel: Math.round(averageLevel * 100) / 100,
     muscleRanks,
   };
