@@ -277,21 +277,43 @@ export function computeOverallTier(
 }
 
 // Map an individual muscle group to the tier of its strongest mapped lift.
-// Muscles with data but no compound lift (isolation-only groups like Abs,
-// Forearms, abductors) fall back to the merged 'Isolation' lift tier.
+// Only compound lifts determine muscle tiers. Core-only muscles (Abs, Core)
+// are excluded from the primary tier per the spec ("report separately as
+// Core Index"). Isolation-only muscles without a compound match get
+// "Untrained" — their data is reported in the session report table instead.
 export function muscleTierFromLifts(
   muscle: MuscleGroup,
   liftResults: LiftResult[],
-  hasData: boolean,
+  _hasData: boolean,
 ): TierInfo {
   const matched = liftResults.filter((r) => (LIFT_TO_MUSCLES[r.lift] ?? []).includes(muscle));
   if (matched.length > 0) {
     matched.sort((a, b) => b.z - a.z);
     return matched[0].tier;
   }
-  if (hasData) {
-    const iso = liftResults.find((r) => r.lift === 'Isolation');
-    if (iso) return iso.tier;
-  }
   return SCIENTIFIC_TIERS[0];
+}
+
+// Compute the target e1RM needed to reach the next tier for a given lift.
+// Returns null if already at max tier or no norm exists.
+export function targetForNextTier(
+  lift: string,
+  currentZ: number,
+  profile: AthleteProfile,
+): { targetER1M: number; targetLoad: number; targetReps: number; tierName: string } | null {
+  const currentTier = mapZToTier(currentZ);
+  if (currentTier.level >= Z_TIERS[Z_TIERS.length - 1].level) return null;
+  const nextMinZ = Z_TIERS[currentTier.level + 1]?.minZ;
+  if (nextMinZ === undefined) return null;
+  const norm = getNormRow(lift, profile);
+  const targetScaled = norm.mean + nextMinZ * norm.sd;
+  const targetER1M = targetScaled * Math.pow(profile.bodyWeightKg, 0.67);
+  // Suggest a reasonable rep range (8 reps) for the target load.
+  const targetLoad = Math.round(targetER1M / Math.pow(8, 0.10));
+  return {
+    targetER1M: Math.round(targetER1M * 10) / 10,
+    targetLoad,
+    targetReps: 8,
+    tierName: Z_TIERS[currentTier.level + 1].name,
+  };
 }

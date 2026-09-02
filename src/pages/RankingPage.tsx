@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { useUser } from '../context/UserContext';
 import { useWorkout } from '../context/WorkoutContext';
 import { calculateOverallUserRank, getTodayActivatedMuscles } from '../utils/ranking';
-import { COMPOUND_LIFTS } from '../utils/tierEngine';
+import { COMPOUND_LIFTS, DEFAULT_PROFILES, targetForNextTier } from '../utils/tierEngine';
 import RankBodyMap from '../components/progress/RankBodyMap';
 
 export default function RankingPage() {
@@ -20,6 +20,21 @@ export default function RankingPage() {
   );
 
   const { overallRank, overallTier, averageLevel, overallZ, liftResults, muscleRanks } = rankResult;
+
+  // Scientific note: suggest a concrete target for the weakest compound lift.
+  const nextTarget = useMemo(() => {
+    if (!liftResults) return null;
+    const profile = DEFAULT_PROFILES[activeUser];
+    const weakestCompound = [...liftResults]
+      .filter((r) => COMPOUND_LIFTS.includes(r.lift as never))
+      .sort((a, b) => a.z - b.z)[0];
+    if (!weakestCompound) return null;
+    return {
+      lift: weakestCompound.lift,
+      target: targetForNextTier(weakestCompound.lift, weakestCompound.z, profile),
+      z: weakestCompound.z,
+    };
+  }, [liftResults, activeUser]);
 
   return (
     <div className="space-y-4 page-enter">
@@ -41,6 +56,12 @@ export default function RankingPage() {
         <p className="text-sm font-bold" style={{ color: overallTier.color }}>
           Median Z: {typeof overallZ === 'number' ? overallZ.toFixed(2) : '—'} · Tier Avg: {averageLevel.toFixed(1)} / 6.0
         </p>
+        {nextTarget?.target && (
+          <p className="mt-3 text-[10px] leading-relaxed" style={{ color: 'var(--text-muted)' }}>
+            <span className="italic">To reach <span style={{ color: overallTier.color, fontWeight: 700 }}>{nextTarget.target.tierName}</span> on {nextTarget.lift}, aim for an e1RM of ~{nextTarget.target.targetER1M}kg (≈ {nextTarget.target.targetLoad}kg × {nextTarget.target.targetReps} reps).
+            </span>
+          </p>
+        )}
       </div>
 
       {/* 2D Body Heatmap */}
@@ -117,7 +138,10 @@ export default function RankingPage() {
         className="rounded-2xl p-4"
         style={{ background: 'var(--bg-surface)', border: 'var(--border-subtle)' }}
       >
-        <p className="text-xs font-semibold mb-3" style={{ color: 'var(--text-muted)' }}>Muscle Rankings (Peak Set Score)</p>
+        <p className="text-xs font-semibold mb-1" style={{ color: 'var(--text-muted)' }}>Muscle Rankings (Compound Strength)</p>
+        <p className="text-[9px] mb-3" style={{ color: 'var(--text-muted)' }}>
+          Tiers derived from each muscle's mapped compound lift. Core (Abs) is reported separately below — it does not count toward your strength tier.
+        </p>
         <div className="space-y-2">
           {muscleRanks.map((mr) => {
             const maxScore = Math.max(...muscleRanks.map((m) => m.peakScore), 1);
