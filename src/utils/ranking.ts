@@ -4,10 +4,14 @@ import {
   DEFAULT_PROFILES,
   computeLiftResults,
   computeOverallTier,
-  muscleTierFromLifts,
   type AthleteProfile,
   type LiftResult,
 } from './tierEngine';
+import {
+  computeMuscleScores,
+  tierFromScore,
+  type MuscleScoreResult,
+} from './rsiEngine';
 
 // ============================================================
 // PEAK SET PERFORMANCE SCORE
@@ -214,11 +218,14 @@ export interface MuscleRankResult {
   peakExercise: string;
   peakDate: string;
   tier: TierInfo;
+  // RSI composite muscle score (0-100)
+  score?: number;
   // Scientific tier engine data (filled when available)
   z?: number;
   scaled?: number;
   e1RM?: number;
   lift?: string;
+  contributions?: MuscleScoreResult['contributions'];
 }
 
 export interface UserRankResult {
@@ -318,13 +325,20 @@ export function calculateOverallUserRank(
   const athleteProfile = profile ?? DEFAULT_PROFILES[userId];
   const peaks = calculateMusclePeaks(workoutData, userId);
   const liftResults = computeLiftResults(workoutData, userId, athleteProfile);
+
+  // RSI engine: weighted composite muscle scores (0-100) per muscle group.
+  const muscleScores = computeMuscleScores(workoutData, userId, athleteProfile.bodyWeightKg);
+  const scoreByMuscle = new Map<MuscleGroup, MuscleScoreResult>(
+    muscleScores.map((m) => [m.muscle, m]),
+  );
+
   const overall = computeOverallTier(liftResults);
   const overallTier = RANK_TIERS[overall.tierLevel] ?? RANK_TIERS[0];
 
-  // Build a lookup of each lift's best result for muscle-tier derivation.
   const muscleRanks: MuscleRankResult[] = ALL_MUSCLE_GROUPS.map((muscle) => {
     const peak = peaks[muscle];
-    const tier = muscleTierFromLifts(muscle, liftResults, peak.score > 0);
+    const sci = scoreByMuscle.get(muscle);
+    const tier = sci ? tierInfoForLevel(sci.tier.level) : RANK_TIERS[0];
     return {
       muscle,
       peakScore: peak.score,
@@ -333,14 +347,20 @@ export function calculateOverallUserRank(
       peakExercise: peak.exerciseName,
       peakDate: peak.dateKey,
       tier,
+      score: sci?.score,
+      contributions: sci?.contributions,
     };
   });
 
-  // Sort by peak score descending (muscles with data first)
-  muscleRanks.sort((a, b) => b.peakScore - a.peakScore);
+  // Sort by RSI score descending (muscles with data first)
+  muscleRanks.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
 
-  // Overall rank = median Z across compound lifts (from the engine).
-  const overallRank = overall.tierName;
+  // Overall rank = composite of muscle scores via the tier breakpoints.
+  const avgScore = muscleScores.length > 0
+    ? muscleScores.reduce((sum, m) => sum + m.score, 0) / muscleScores.length
+    : 0;
+  const overallTierFromScore = tierFromScore(avgScore);
+  const overallRank = overallTierFromScore.name;
 
   // averageLevel = mean muscle tier level (0..6) — used by the header gauge.
   const totalLevels = muscleRanks.reduce((sum, mr) => sum + mr.tier.level, 0);
@@ -356,6 +376,11 @@ export function calculateOverallUserRank(
     averageLevel: Math.round(averageLevel * 100) / 100,
     muscleRanks,
   };
+}
+
+// Re-export helper so ranking.ts consumers get tier lookup without a circular import.
+export function tierInfoForLevel(level: number): TierInfo {
+  return SCIENTIFIC_TIERS[Math.max(0, Math.min(level, SCIENTIFIC_TIERS.length - 1))];
 }
 
 function todayKey(): string {

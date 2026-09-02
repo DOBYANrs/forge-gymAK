@@ -66,7 +66,7 @@ export function applyRankColors(
     const cloned = mat.clone();
     const muscle = MESH_TO_MUSCLE[child.name];
     const rank = muscle ? rankMap.get(muscle) : undefined;
-    if (muscle && rank && rank.peakScore > 0) {
+    if (muscle && rank && (rank.score ?? 0) > 0) {
       // Muscle with real training data -> show its rank tier color.
       const color = new THREE.Color(rank.tier.color);
       cloned.color.copy(color);

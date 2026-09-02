@@ -52,11 +52,11 @@ function formatVolume(v: number): string {
 
 // Identify the muscle groups the user is weakest in: first truly untrained
 // ones, then the lowest-tier trained ones.
-function findLacking(sorted: { muscle: MuscleGroup; peakScore: number; tier: TierInfo }[]) {
-  const untrained = sorted.filter((m) => m.peakScore <= 0).map((m) => m.muscle);
+function findLacking(sorted: { muscle: MuscleGroup; score: number; tier: TierInfo }[]) {
+  const untrained = sorted.filter((m) => m.score <= 0).map((m) => m.muscle);
   const trained = sorted
-    .filter((m) => m.peakScore > 0)
-    .sort((a, b) => a.tier.level - b.tier.level || a.peakScore - b.peakScore);
+    .filter((m) => m.score > 0)
+    .sort((a, b) => a.tier.level - b.tier.level || a.score - b.score);
   return { untrained, trained };
 }
 
@@ -79,14 +79,14 @@ export function buildCoachInsights(
     `${totalExercises} move${totalExercises === 1 ? '' : 's'} · ${totalSets} set${totalSets === 1 ? '' : 's'} · ` +
     `${formatVolume(totalVolume)}kg volume — hit ${groupsText.toLowerCase()}.`;
 
-  // Weakest muscle analysis
+  // Weakest muscle analysis (RSI composite score)
   const sorted = rankResult.muscleRanks
     .slice()
-    .sort((a, b) => b.peakScore - a.peakScore)
-    .map((m) => ({ muscle: m.muscle, peakScore: m.peakScore, tier: m.tier }));
+    .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
+    .map((m) => ({ muscle: m.muscle, score: m.score ?? 0, tier: m.tier }));
 
   const weakest: { muscle: MuscleGroup; tier: TierInfo }[] = sorted
-    .filter((m) => m.peakScore <= 0 || m.tier.level <= 1)
+    .filter((m) => m.score <= 0 || m.tier.level <= 1)
     .map((m) => ({ muscle: m.muscle, tier: m.tier }))
     .slice(0, 3);
 
@@ -115,7 +115,7 @@ export function buildCoachInsights(
 
   // Balance check: any whole side/category never trained?
   if (advice.length < 3) {
-    const trainedSet = new Set(sorted.filter((m) => m.peakScore > 0).map((m) => m.muscle));
+    const trainedSet = new Set(sorted.filter((m) => m.score > 0).map((m) => m.muscle));
     const lower = ['Legs', 'Hamstrings', 'Calves'].filter((m) => !trainedSet.has(m as MuscleGroup));
     const core = ['Abs', 'Core'].filter((m) => !trainedSet.has(m as MuscleGroup));
     if (lower.length === 3) {

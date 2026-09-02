@@ -102,7 +102,7 @@ export default function RankBodyMap({ muscleRanks, activeToday = [] }: RankBodyM
       const out: IExerciseData[] = [];
       for (const { key, activity } of defs) {
         const rank = rankMap.get(activity);
-        if (!rank || rank.peakScore <= 0) continue;
+        if (!rank || (rank.score ?? 0) <= 0) continue;
         out.push({ name: activity, muscles: [key], frequency: rank.tier.level + 1 });
       }
       return out;
@@ -114,8 +114,8 @@ export default function RankBodyMap({ muscleRanks, activeToday = [] }: RankBodyM
       setTooltip({
         label: rank?.muscle ?? String(muscle),
         color: rank?.tier.color ?? 'var(--text-muted)',
-        detail: rank && rank.peakScore > 0
-          ? `Peak: ${rank.peakScore} pts (${rank.peakWeight}kg × ${rank.peakReps})`
+        detail: rank && (rank.score ?? 0) > 0
+          ? `${rank.tier.name} · Composite ${(rank.score ?? 0).toFixed(0)} / 100${rank.peakScore > 0 ? ` (Peak ${rank.peakWeight}kg × ${rank.peakReps})` : ''}`
           : 'No data yet',
       });
     };
