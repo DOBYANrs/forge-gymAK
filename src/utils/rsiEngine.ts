@@ -51,12 +51,16 @@ export function tierFromPercentile(pct: number): { name: string; level: number }
 }
 
 // ─── Per-exercise population standards ─────────────────────
-// ratio50 = median (50th percentile) 1RM expressed as × bodyweight
-// ratioSd = standard deviation of that ratio spread.
-// upper   = upper-body/press moves (leverage-sensitive) vs lower.
+// Real bodyweight-ratio thresholds (e1RM ÷ bodyweight) for the five
+// tier anchors, sourced from Strength Level (150M+ logged lifts; tier =
+// percentile: Beginner 5th, Novice 20th, Intermediate 50th, Advanced 80th,
+// Elite 95th). A lifter's ratio is interpolated between these fixed
+// boundaries — no guessed distribution spreads, so no normal lift inflates
+// to an extreme percentile.
+// rat = [beginner, novice, intermediate, advanced, elite]
+// upper = upper-body/compression move (BMI leverage applies).
 export interface ExerciseStandard {
-  ratio50: number;
-  ratioSd: number;
+  rat: [number, number, number, number, number];
   upper: boolean; // upper-body compression move (BMI leverage applies)
   // Muscle(s) targeted with relative effectiveness weight (sums across
   // exercises for a muscle are normalised at composite time).
@@ -68,56 +72,56 @@ export interface ExerciseStandard {
 export const EXERCISE_STANDARDS: Record<string, ExerciseStandard> = {
   // ── CHEST ──
   'Incline Chest Press': {
-    name: 'Incline Chest Press', ratio50: 0.80, ratioSd: 0.20, upper: true,
+    name: 'Incline Chest Press', rat: [0.45, 0.70, 1.10, 1.50, 1.75], upper: true,
     targets: [{ muscle: 'Chest', effectiveness: 0.40 }],
   },
   'Yellow Machine Chest Press': {
-    name: 'Yellow Machine Chest Press', ratio50: 0.90, ratioSd: 0.22, upper: true,
+    name: 'Yellow Machine Chest Press', rat: [0.60, 0.90, 1.40, 1.90, 2.20], upper: true,
     targets: [{ muscle: 'Chest', effectiveness: 0.20 }],
   },
   'Cable Fly': {
-    name: 'Cable Fly', ratio50: 0.50, ratioSd: 0.14, upper: true,
+    name: 'Cable Fly', rat: [0.25, 0.40, 0.60, 0.90, 1.10], upper: true,
     targets: [{ muscle: 'Chest', effectiveness: 0.15 }],
   },
   'Cable Fly 55 Degree': {
-    name: 'Cable Fly 55 Degree', ratio50: 0.52, ratioSd: 0.14, upper: true,
+    name: 'Cable Fly 55 Degree', rat: [0.26, 0.42, 0.62, 0.92, 1.12], upper: true,
     targets: [{ muscle: 'Chest', effectiveness: 0.15 }],
   },
   'Lower Chest Cable Pulldown': {
-    name: 'Lower Chest Cable Pulldown', ratio50: 0.55, ratioSd: 0.15, upper: true,
+    name: 'Lower Chest Cable Pulldown', rat: [0.28, 0.45, 0.65, 0.95, 1.15], upper: true,
     targets: [{ muscle: 'Chest', effectiveness: 0.25 }],
   },
   // ── BACK (vertical pull) ──
   'Lat Pulldown': {
-    name: 'Lat Pulldown', ratio50: 1.10, ratioSd: 0.26, upper: true,
+    name: 'Lat Pulldown', rat: [0.50, 0.75, 1.00, 1.50, 1.75], upper: true,
     targets: [{ muscle: 'Back', effectiveness: 0.35 }],
   },
   'Pull Down': {
-    name: 'Pull Down', ratio50: 1.10, ratioSd: 0.26, upper: true,
+    name: 'Pull Down', rat: [0.50, 0.75, 1.00, 1.50, 1.75], upper: true,
     targets: [{ muscle: 'Back', effectiveness: 0.35 }],
   },
   '1-Hand Lat Pulldown': {
-    name: '1-Hand Lat Pulldown', ratio50: 1.05, ratioSd: 0.26, upper: true,
+    name: '1-Hand Lat Pulldown', rat: [0.40, 0.60, 0.80, 1.20, 1.40], upper: true,
     targets: [{ muscle: 'Back', effectiveness: 0.30 }],
   },
   'Pull Up': {
-    name: 'Pull Up', ratio50: 1.15, ratioSd: 0.30, upper: true,
+    name: 'Pull Up', rat: [0.75, 1.00, 1.25, 1.50, 1.75], upper: true,
     targets: [{ muscle: 'Back', effectiveness: 0.35 }],
   },
   // ── BACK (horizontal / upper-mid row) ──
   'Row Machine 2 Var 2': {
-    name: 'Row Machine 2 Var 2', ratio50: 1.00, ratioSd: 0.24, upper: true,
+    name: 'Row Machine 2 Var 2', rat: [0.55, 0.70, 1.00, 1.30, 1.70], upper: true,
     targets: [{ muscle: 'Back', effectiveness: 0.40 }],
   },
   'Row Machine 1 Var 2': {
-    name: 'Row Machine 1 Var 2', ratio50: 1.00, ratioSd: 0.24, upper: true,
+    name: 'Row Machine 1 Var 2', rat: [0.55, 0.70, 1.00, 1.30, 1.70], upper: true,
     targets: [
       { muscle: 'Back', effectiveness: 0.40 },
       { muscle: 'Shoulders', effectiveness: 0.15 },
     ],
   },
   'Archer Pull': {
-    name: 'Archer Pull', ratio50: 0.55, ratioSd: 0.16, upper: true,
+    name: 'Archer Pull', rat: [0.30, 0.45, 0.65, 0.90, 1.10], upper: true,
     targets: [
       { muscle: 'Back', effectiveness: 0.20 },
       { muscle: 'Shoulders', effectiveness: 0.30 },
@@ -125,93 +129,93 @@ export const EXERCISE_STANDARDS: Record<string, ExerciseStandard> = {
   },
   // ── SHOULDERS ──
   'Overhead Press': {
-    name: 'Overhead Press', ratio50: 0.60, ratioSd: 0.16, upper: true,
+    name: 'Overhead Press', rat: [0.35, 0.55, 0.75, 1.00, 1.25], upper: true,
     targets: [{ muscle: 'Shoulders', effectiveness: 0.50 }],
   },
   'Face Pulls': {
-    name: 'Face Pulls', ratio50: 0.28, ratioSd: 0.08, upper: true,
+    name: 'Face Pulls', rat: [0.20, 0.30, 0.45, 0.65, 0.85], upper: true,
     targets: [
       { muscle: 'Shoulders', effectiveness: 0.20 },
       { muscle: 'Back', effectiveness: 0.10 },
     ],
   },
   'Lateral Raise': {
-    name: 'Lateral Raise', ratio50: 0.18, ratioSd: 0.05, upper: true,
+    name: 'Lateral Raise', rat: [0.15, 0.22, 0.32, 0.45, 0.60], upper: true,
     targets: [{ muscle: 'Shoulders', effectiveness: 0.30 }],
   },
   // ── LEGS (quad/glute) ──
   'Low-Foot Placement Leg Press': {
-    name: 'Low-Foot Placement Leg Press', ratio50: 3.20, ratioSd: 0.65, upper: false,
+    name: 'Low-Foot Placement Leg Press', rat: [1.30, 2.00, 2.90, 3.90, 5.00], upper: false,
     targets: [{ muscle: 'Legs', effectiveness: 0.40 }],
   },
   'Low-Foot Leg Press': {
-    name: 'Low-Foot Leg Press', ratio50: 3.20, ratioSd: 0.65, upper: false,
+    name: 'Low-Foot Leg Press', rat: [1.30, 2.00, 2.90, 3.90, 5.00], upper: false,
     targets: [{ muscle: 'Legs', effectiveness: 0.40 }],
   },
   'Leg Press': {
-    name: 'Leg Press', ratio50: 3.20, ratioSd: 0.65, upper: false,
+    name: 'Leg Press', rat: [1.30, 2.00, 2.90, 3.90, 5.00], upper: false,
     targets: [{ muscle: 'Legs', effectiveness: 0.40 }],
   },
   'Leg Extension': {
-    name: 'Leg Extension', ratio50: 1.00, ratioSd: 0.22, upper: false,
+    name: 'Leg Extension', rat: [0.50, 0.90, 1.25, 1.75, 2.30], upper: false,
     targets: [{ muscle: 'Legs', effectiveness: 0.30 }],
   },
   // ── HAMSTRINGS ──
   'Hamstring Curl': {
-    name: 'Hamstring Curl', ratio50: 0.70, ratioSd: 0.16, upper: false,
+    name: 'Hamstring Curl', rat: [0.45, 0.70, 1.00, 1.45, 1.85], upper: false,
     targets: [{ muscle: 'Hamstrings', effectiveness: 0.50 }],
   },
   'Leg Curl': {
-    name: 'Leg Curl', ratio50: 0.70, ratioSd: 0.16, upper: false,
+    name: 'Leg Curl', rat: [0.45, 0.70, 1.00, 1.45, 1.85], upper: false,
     targets: [{ muscle: 'Hamstrings', effectiveness: 0.50 }],
   },
   // ── ABDUCTORS ──
   'Abduction Machine': {
-    name: 'Abduction Machine', ratio50: 0.55, ratioSd: 0.14, upper: false,
+    name: 'Abduction Machine', rat: [0.25, 0.40, 0.55, 0.80, 1.10], upper: false,
     targets: [{ muscle: 'Abductors', effectiveness: 1.0 }],
   },
   // ── BICEPS ──
   'Spider Curl': {
-    name: 'Spider Curl', ratio50: 0.30, ratioSd: 0.08, upper: true,
+    name: 'Spider Curl', rat: [0.25, 0.38, 0.55, 0.80, 1.10], upper: true,
     targets: [{ muscle: 'Biceps', effectiveness: 0.40 }],
   },
   'Biceps Curl / Cable Curl': {
-    name: 'Biceps Curl / Cable Curl', ratio50: 0.30, ratioSd: 0.08, upper: true,
+    name: 'Biceps Curl / Cable Curl', rat: [0.25, 0.38, 0.55, 0.80, 1.10], upper: true,
     targets: [{ muscle: 'Biceps', effectiveness: 0.30 }],
   },
   // ── TRICEPS ──
   'Triceps Push Down': {
-    name: 'Triceps Push Down', ratio50: 0.40, ratioSd: 0.10, upper: true,
+    name: 'Triceps Push Down', rat: [0.25, 0.45, 0.70, 1.05, 1.40], upper: true,
     targets: [{ muscle: 'Triceps', effectiveness: 0.40 }],
   },
   'Triceps Overhead Extension': {
-    name: 'Triceps Overhead Extension', ratio50: 0.38, ratioSd: 0.10, upper: true,
+    name: 'Triceps Overhead Extension', rat: [0.22, 0.40, 0.65, 0.95, 1.25], upper: true,
     targets: [{ muscle: 'Triceps', effectiveness: 0.30 }],
   },
   // ── CALVES ──
   'Calf Raise': {
-    name: 'Calf Raise', ratio50: 1.50, ratioSd: 0.35, upper: false,
+    name: 'Calf Raise', rat: [0.50, 1.00, 1.50, 2.25, 3.25], upper: false,
     targets: [{ muscle: 'Calves', effectiveness: 0.50 }],
   },
   // ── CORE / ABS (bodyweight -> scored by reps) ──
   'Cable Crunches': {
-    name: 'Cable Crunches', ratio50: 0, ratioSd: 0, upper: false, isCore: true, targets: [{ muscle: 'Abs', effectiveness: 0.25 }],
+    name: 'Cable Crunches', rat: [0, 0, 0, 0, 0], upper: false, isCore: true, targets: [{ muscle: 'Abs', effectiveness: 0.25 }],
   },
   'Oblique Side Switches': {
-    name: 'Oblique Side Switches', ratio50: 0, ratioSd: 0, upper: false, isCore: true, targets: [{ muscle: 'Abs', effectiveness: 0.15 }],
+    name: 'Oblique Side Switches', rat: [0, 0, 0, 0, 0], upper: false, isCore: true, targets: [{ muscle: 'Abs', effectiveness: 0.15 }],
   },
   'Floor Crunches / Hanging Knee Raises': {
-    name: 'Floor Crunches / Hanging Knee Raises', ratio50: 0, ratioSd: 0, upper: false, isCore: true, targets: [{ muscle: 'Abs', effectiveness: 0.25 }],
+    name: 'Floor Crunches / Hanging Knee Raises', rat: [0, 0, 0, 0, 0], upper: false, isCore: true, targets: [{ muscle: 'Abs', effectiveness: 0.25 }],
   },
   'Front Lever Progression': {
-    name: 'Front Lever Progression', ratio50: 0, ratioSd: 0, upper: false, isCore: true, targets: [{ muscle: 'Abs', effectiveness: 0.20 }],
+    name: 'Front Lever Progression', rat: [0, 0, 0, 0, 0], upper: false, isCore: true, targets: [{ muscle: 'Abs', effectiveness: 0.20 }],
   },
   'Dead Hang': {
-    name: 'Dead Hang', ratio50: 0, ratioSd: 0, upper: false, isCore: true, targets: [{ muscle: 'Abs', effectiveness: 0.15 }],
+    name: 'Dead Hang', rat: [0, 0, 0, 0, 0], upper: false, isCore: true, targets: [{ muscle: 'Abs', effectiveness: 0.15 }],
   },
   // ── FOREARMS ──
   'Wrist Flexion & Extension Superset': {
-    name: 'Wrist Flexion & Extension Superset', ratio50: 0.25, ratioSd: 0.08, upper: true,
+    name: 'Wrist Flexion & Extension Superset', rat: [0.20, 0.30, 0.42, 0.60, 0.80], upper: true,
     targets: [{ muscle: 'Forearms', effectiveness: 1.0 }],
   },
 };
@@ -300,6 +304,10 @@ export function bestLogForExercise(
 }
 
 // ─── Per-exercise percentile (0-100) ───────────────────────
+// For loaded moves the lifter's bodyweight-ratio (e1RM ÷ bodyweight) is
+// interpolated between the five real tier ratios (Beginner 5th / Novice
+// 20th / Intermediate 50th / Advanced 80th / Elite 95th percentile).
+// For bodyweight/core moves it is scaled by reps against a rep target.
 export function exercisePercentile(
   exerciseName: string,
   best: BestLog | null,
@@ -321,8 +329,41 @@ export function exercisePercentile(
   const leverage = bmiLeverage(bmi, std.upper);
   const age = ageCoefficient(profile.age);
   const adjusted = rel * leverage * age;
-  const z = std.ratioSd > 0 ? (adjusted - std.ratio50) / std.ratioSd : 0;
-  return Math.max(0, Math.min(100, percentileFromZ(z)));
+
+  // Anchor ratios -> percentile. Tier anchors map to the percentiles that
+  // Strength Level uses for each label.
+  const anchors: [number, number][] = [
+    [std.rat[0], 5],   // Beginner
+    [std.rat[1], 20],  // Novice
+    [std.rat[2], 50],  // Intermediate
+    [std.rat[3], 80],  // Advanced
+    [std.rat[4], 95],  // Elite
+  ];
+  return Math.max(0, Math.min(100, interpolate(adjusted, anchors)));
+}
+
+// Piecewise-linear interpolation between (ratio -> percentile) anchor points.
+export function interpolate(x: number, anchors: [number, number][]): number {
+  if (x <= anchors[0][0]) {
+    const [x0, y0] = anchors[0];
+    const [x1, y1] = anchors[1];
+    // Extrapolate below the first anchor using the first segment slope.
+    if (x1 - x0 === 0) return y0;
+    return y0 + ((x - x0) / (x1 - x0)) * (y1 - y0);
+  }
+  for (let i = 1; i < anchors.length; i++) {
+    const [xa, ya] = anchors[i - 1];
+    const [xb, yb] = anchors[i];
+    if (x <= xb) {
+      if (xb - xa === 0) return ya;
+      return ya + ((x - xa) / (xb - xa)) * (yb - ya);
+    }
+  }
+  // Above the last anchor, extrapolate using the final segment slope.
+  const [xN1, yN1] = anchors[anchors.length - 2];
+  const [xN, yN] = anchors[anchors.length - 1];
+  if (xN - xN1 === 0) return yN;
+  return yN + ((x - xN) / (xN - xN1)) * (yN - yN1);
 }
 
 // Resolve a percentile to a TierInfo (unified 7-tier palette).

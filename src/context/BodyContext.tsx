@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import type { BodyMetrics, BodyMetricsData, UserId } from '../types';
 import { formatDateKey } from '../utils/dates';
+import { DEFAULT_PROFILES, resolveEffectiveProfile, type AthleteProfile } from '../utils/tierEngine';
 import {
   isFirebaseConfigured,
   subscribeToBodyMetrics,
@@ -12,6 +13,7 @@ interface BodyContextType {
   getMetrics: (userId: UserId, dateKey: string) => BodyMetrics | undefined;
   saveMetrics: (userId: UserId, weightKg: number, heightCm: number) => void;
   getAllMetrics: (userId: UserId) => BodyMetrics[];
+  getLatestProfile: (userId: UserId) => AthleteProfile;
 }
 
 const STORAGE_KEY = 'kasaint_gym_body_metrics';
@@ -81,8 +83,23 @@ export function BodyProvider({ children }: { children: ReactNode }) {
     return Object.values(data).filter(Boolean) as BodyMetrics[];
   }, [bodyMetrics]);
 
+  // Resolve the live profile: default plus the user's latest saved weight/height.
+  const getLatestProfile = useCallback((userId: UserId): AthleteProfile => {
+    const all = bodyMetrics[userId];
+    let latest: BodyMetrics | undefined;
+    if (all) {
+      for (const m of Object.values(all)) {
+        if (!m) continue;
+        if (!latest || m.timestamp > latest.timestamp) latest = m;
+      }
+    }
+    return resolveEffectiveProfile(DEFAULT_PROFILES[userId], latest);
+  }, [bodyMetrics]);
+
   return (
-    <BodyContext.Provider value={{ bodyMetrics, getMetrics, saveMetrics, getAllMetrics }}>
+    <BodyContext.Provider
+      value={{ bodyMetrics, getMetrics, saveMetrics, getAllMetrics, getLatestProfile }}
+    >
       {children}
     </BodyContext.Provider>
   );

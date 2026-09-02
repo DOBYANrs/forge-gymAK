@@ -161,6 +161,19 @@ export const DEFAULT_PROFILES: Record<UserId, AthleteProfile> = {
   keneni: { age: 20, bodyWeightKg: 75, heightCm: 175 },
 };
 
+// Merge a user's latest saved BodyMetrics over the default profile so the
+// ranking engine uses live weight/height when present, else falls back.
+export function resolveEffectiveProfile(
+  defaults: AthleteProfile,
+  metrics?: { weightKg?: number; heightCm?: number },
+): AthleteProfile {
+  const weight =
+    metrics?.weightKg && metrics.weightKg > 0 ? metrics.weightKg : defaults.bodyWeightKg;
+  const height =
+    metrics?.heightCm && metrics.heightCm > 0 ? metrics.heightCm : defaults.heightCm;
+  return { age: defaults.age, bodyWeightKg: weight, heightCm: height };
+}
+
 // Age/sex-adjusted norms (Section 3, Step 3).
 export function getNormRow(lift: string, profile: AthleteProfile): NormRow {
   const base = NORMATIVE_DB[lift] ?? NORMATIVE_DB['Isolation'];

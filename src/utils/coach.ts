@@ -1,4 +1,5 @@
 import type { ExerciseLog, UserId } from '../types';
+import type { AthleteProfile } from './tierEngine';
 import {
   calculateOverallUserRank,
   getActivatedMusclesOnDate,
@@ -64,10 +65,12 @@ export function buildCoachInsights(
   workoutData: Record<string, Record<string, DayLike>>,
   userId: UserId,
   dateKey: string,
+  profile?: AthleteProfile,
 ): CoachInsights {
   const rankResult = calculateOverallUserRank(
     workoutData as never,
     userId,
+    profile,
   );
 
   const { totalExercises, totalSets, totalVolume } = summarizeDay(workoutData, userId, dateKey);

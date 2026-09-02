@@ -5,6 +5,7 @@ import Leaderboard from '../components/social/Leaderboard';
 import PRBadges from '../components/progress/PRBadges';
 import RankBodyMap from '../components/progress/RankBodyMap';
 import { useWorkout } from '../context/WorkoutContext';
+import { useBody } from '../context/BodyContext';
 import { calculateOverallUserRank, getTodayActivatedMuscles } from '../utils/ranking';
 
 type Tab = 'feed' | 'leaderboard' | 'prs' | 'heatmap';
@@ -12,12 +13,14 @@ type Tab = 'feed' | 'leaderboard' | 'prs' | 'heatmap';
 export default function SocialPage() {
   const { activeUser } = useUser();
   const { workoutData } = useWorkout();
+  const { getLatestProfile } = useBody();
+  const profile = getLatestProfile(activeUser);
   const [activeTab, setActiveTab] = useState<Tab>('feed');
 
   // Compute muscle peak ranks for heatmap
   const rankResult = useMemo(
-    () => calculateOverallUserRank(workoutData, activeUser),
-    [workoutData, activeUser],
+    () => calculateOverallUserRank(workoutData, activeUser, profile),
+    [workoutData, activeUser, profile],
   );
 
   // Muscles trained today for the active user (drives the pulse highlight)

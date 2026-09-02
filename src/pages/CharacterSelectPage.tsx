@@ -2,6 +2,7 @@ import { useState, useCallback, useMemo } from 'react';
 import type { UserId } from '../types';
 import { useUser } from '../context/UserContext';
 import { useWorkout } from '../context/WorkoutContext';
+import { useBody } from '../context/BodyContext';
 import { storeUser } from '../components/UserSelector';
 import CinematicIntro from '../components/intro/CinematicIntro';
 import { getDaySchedule } from '../data/schedule';
@@ -34,6 +35,7 @@ interface CharacterSelectPageProps {
 export default function CharacterSelectPage({ onSelect }: CharacterSelectPageProps) {
   const { setActiveUser } = useUser();
   const { workoutData } = useWorkout();
+  const { getLatestProfile } = useBody();
   const [phase, setPhase] = useState<Phase>('select');
   const [selectedUser, setSelectedUser] = useState<UserId | null>(null);
 
@@ -48,8 +50,8 @@ export default function CharacterSelectPage({ onSelect }: CharacterSelectPagePro
   // Per-muscle rank tiers used to color the 3D anatomy
   const muscleRanks = useMemo<MuscleRankResult[]>(() => {
     if (!selectedUser) return [];
-    return calculateOverallUserRank(workoutData, selectedUser).muscleRanks;
-  }, [workoutData, selectedUser]);
+    return calculateOverallUserRank(workoutData, selectedUser, getLatestProfile(selectedUser)).muscleRanks;
+  }, [workoutData, selectedUser, getLatestProfile]);
 
   const handleUserClick = useCallback((user: UserId) => {
     setSelectedUser(user);

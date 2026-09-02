@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useUser } from '../context/UserContext';
 import { useWorkout } from '../context/WorkoutContext';
+import { useBody } from '../context/BodyContext';
 import { useSchedule } from '../context/ScheduleContext';
 import { getDaySchedule } from '../data/schedule';
 import { formatDateKey, getLastWeekDateKey } from '../utils/dates';
@@ -57,6 +58,7 @@ function getWeekDays(date: Date): { date: Date; dateKey: string; dayName: string
 
 export default function TodayPage() {
   const { activeUser } = useUser();
+  const { getLatestProfile } = useBody();
   const { getDayWorkout, updateDayExercises, deletedExercises, deleteExerciseFromDay, moveExercise, toggleCompleted, workoutData } = useWorkout();
   const { getScheduleForDay } = useSchedule();
   const [showAddModal, setShowAddModal] = useState(false);
@@ -139,8 +141,8 @@ export default function TodayPage() {
 
   // Offline coach recap computed purely from local workout data.
   const coach = useMemo(
-    () => buildCoachInsights(workoutData, activeUser, dateKey),
-    [workoutData, activeUser, dateKey],
+    () => buildCoachInsights(workoutData, activeUser, dateKey, getLatestProfile(activeUser)),
+    [workoutData, activeUser, dateKey, getLatestProfile],
   );
 
   // Scroll reveal refs

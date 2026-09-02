@@ -1,19 +1,21 @@
 import { useMemo } from 'react';
 import { useWorkout } from '../context/WorkoutContext';
+import { useBody } from '../context/BodyContext';
 import { calculateOverallUserRank, RANK_TIERS } from '../utils/ranking';
 import { USER_COLORS } from '../types';
 import Muscle360Viewer from '../components/threed/Muscle360Viewer';
 
 export default function Muscle360Page() {
   const { workoutData } = useWorkout();
+  const { getLatestProfile } = useBody();
 
   const abel = useMemo(
-    () => calculateOverallUserRank(workoutData, 'abel'),
-    [workoutData],
+    () => calculateOverallUserRank(workoutData, 'abel', getLatestProfile('abel')),
+    [workoutData, getLatestProfile],
   );
   const keneni = useMemo(
-    () => calculateOverallUserRank(workoutData, 'keneni'),
-    [workoutData],
+    () => calculateOverallUserRank(workoutData, 'keneni', getLatestProfile('keneni')),
+    [workoutData, getLatestProfile],
   );
 
   const abelColor = USER_COLORS['abel'].primary;

@@ -1,18 +1,20 @@
 import { useMemo } from 'react';
 import { useUser } from '../context/UserContext';
 import { useWorkout } from '../context/WorkoutContext';
+import { useBody } from '../context/BodyContext';
 import { calculateOverallUserRank, getTodayActivatedMuscles } from '../utils/ranking';
 import { computeMuscleScores } from '../utils/rsiEngine';
-import { DEFAULT_PROFILES } from '../utils/tierEngine';
 import RankBodyMap from '../components/progress/RankBodyMap';
 
 export default function RankingPage() {
   const { activeUser } = useUser();
   const { workoutData } = useWorkout();
+  const { getLatestProfile } = useBody();
+  const profile = getLatestProfile(activeUser);
 
   const rankResult = useMemo(
-    () => calculateOverallUserRank(workoutData, activeUser),
-    [workoutData, activeUser],
+    () => calculateOverallUserRank(workoutData, activeUser, profile),
+    [workoutData, activeUser, profile],
   );
 
   const activeToday = useMemo(
@@ -22,7 +24,6 @@ export default function RankingPage() {
 
   const { overallRank, overallTier, averageLevel, muscleRanks } = rankResult;
 
-  const profile = DEFAULT_PROFILES[activeUser];
   const muscleScores = useMemo(
     () => computeMuscleScores(workoutData, activeUser, profile),
     [workoutData, activeUser, profile],
@@ -54,8 +55,9 @@ export default function RankingPage() {
         </p>
         <p className="mt-2 text-[10px] leading-relaxed" style={{ color: 'var(--text-muted)' }}>
           Ranking uses your <span className="font-semibold">weight, height &amp; age</span> — each lift is normalized by bodyweight,
-          adjusted for BMI leverage and age, then compared per-exercise against population percentiles
-          (Untrained → Elite). Every exercise counts toward its muscle.
+          adjusted for BMI leverage and age, then rated against real population strength norms
+          (Strength Level, 150M+ lifts; Beginner 5th → Elite 95th percentile).
+          Every exercise counts toward its muscle.
         </p>
       </div>
 
