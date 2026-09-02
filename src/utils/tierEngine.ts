@@ -148,16 +148,17 @@ export const SCIENTIFIC_TIERS: TierInfo[] = [
   { name: 'Legendary / Elite', level: 6, threshold: 6,   color: '#ef4444', cssGlow: '0 0 22px rgba(239,68,68,0.55)' },
 ];
 
-// ─── Athlete profile (age/body weight) ────────────────
+// ─── Athlete profile (age / body weight / height) ────────────
 export interface AthleteProfile {
   age: number;
   bodyWeightKg: number;
+  heightCm: number;
 }
 
-// Default profiles from the paper (Abel 19/62, Keneni 20/75).
+// Default profiles (Abel 62/174/19, Keneni 75/175/20).
 export const DEFAULT_PROFILES: Record<UserId, AthleteProfile> = {
-  abel: { age: 19, bodyWeightKg: 62 },
-  keneni: { age: 20, bodyWeightKg: 75 },
+  abel: { age: 19, bodyWeightKg: 62, heightCm: 174 },
+  keneni: { age: 20, bodyWeightKg: 75, heightCm: 175 },
 };
 
 // Age/sex-adjusted norms (Section 3, Step 3).

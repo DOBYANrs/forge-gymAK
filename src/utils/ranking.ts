@@ -9,7 +9,7 @@ import {
 } from './tierEngine';
 import {
   computeMuscleScores,
-  tierFromScore,
+  tierFromPercentileInfo,
   type MuscleScoreResult,
 } from './rsiEngine';
 
@@ -327,18 +327,17 @@ export function calculateOverallUserRank(
   const liftResults = computeLiftResults(workoutData, userId, athleteProfile);
 
   // RSI engine: weighted composite muscle scores (0-100) per muscle group.
-  const muscleScores = computeMuscleScores(workoutData, userId, athleteProfile.bodyWeightKg);
+  const muscleScores = computeMuscleScores(workoutData, userId, athleteProfile);
   const scoreByMuscle = new Map<MuscleGroup, MuscleScoreResult>(
     muscleScores.map((m) => [m.muscle, m]),
   );
 
   const overall = computeOverallTier(liftResults);
-  const overallTier = RANK_TIERS[overall.tierLevel] ?? RANK_TIERS[0];
 
   const muscleRanks: MuscleRankResult[] = ALL_MUSCLE_GROUPS.map((muscle) => {
     const peak = peaks[muscle];
     const sci = scoreByMuscle.get(muscle);
-    const tier = sci ? tierInfoForLevel(sci.tier.level) : RANK_TIERS[0];
+    const tier = sci ? sci.tier : RANK_TIERS[0];
     return {
       muscle,
       peakScore: peak.score,
@@ -352,15 +351,17 @@ export function calculateOverallUserRank(
     };
   });
 
-  // Sort by RSI score descending (muscles with data first)
+  // Sort by percentile score descending (muscles with data first)
   muscleRanks.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
 
-  // Overall rank = composite of muscle scores via the tier breakpoints.
-  const avgScore = muscleScores.length > 0
-    ? muscleScores.reduce((sum, m) => sum + m.score, 0) / muscleScores.length
+  // Overall = mean of trained muscles only (untrained ones with no data
+  // shouldn't drag the score down).
+  const trainedMuscles = muscleScores.filter((m) => m.score > 0);
+  const avgScore = trainedMuscles.length > 0
+    ? trainedMuscles.reduce((sum, m) => sum + m.score, 0) / trainedMuscles.length
     : 0;
-  const overallTierFromScore = tierFromScore(avgScore);
-  const overallRank = overallTierFromScore.name;
+  const overallTier = tierFromPercentileInfo(avgScore);
+  const overallRank = overallTier.name;
 
   // averageLevel = mean muscle tier level (0..6) — used by the header gauge.
   const totalLevels = muscleRanks.reduce((sum, mr) => sum + mr.tier.level, 0);

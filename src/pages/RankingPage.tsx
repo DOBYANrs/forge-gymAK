@@ -24,11 +24,12 @@ export default function RankingPage() {
 
   const profile = DEFAULT_PROFILES[activeUser];
   const muscleScores = useMemo(
-    () => computeMuscleScores(workoutData, activeUser, profile.bodyWeightKg),
-    [workoutData, activeUser, profile.bodyWeightKg],
+    () => computeMuscleScores(workoutData, activeUser, profile),
+    [workoutData, activeUser, profile],
   );
-  const avgScore = muscleScores.length > 0
-    ? muscleScores.reduce((s, m) => s + m.score, 0) / muscleScores.length
+  const trainedMuscles = muscleScores.filter((m) => m.score > 0);
+  const avgScore = trainedMuscles.length > 0
+    ? trainedMuscles.reduce((s, m) => s + m.score, 0) / trainedMuscles.length
     : 0;
 
   return (
@@ -49,11 +50,12 @@ export default function RankingPage() {
           {overallRank}
         </p>
         <p className="text-sm font-bold" style={{ color: overallTier.color }}>
-          Overall RSI: {avgScore.toFixed(1)} / 100 · Tier Avg: {averageLevel.toFixed(1)} / 6.0
+          Overall: {avgScore.toFixed(1)} / 100 · Tier Avg: {averageLevel.toFixed(1)} / 6.0
         </p>
         <p className="mt-2 text-[10px] leading-relaxed" style={{ color: 'var(--text-muted)' }}>
-          Ranking is based on <span className="font-semibold">RSI</span> (estimated 1RM ÷ bodyweight) versus elite targets,
-          blended into a composite 0–100 score per muscle group.
+          Ranking uses your <span className="font-semibold">weight, height &amp; age</span> — each lift is normalized by bodyweight,
+          adjusted for BMI leverage and age, then compared per-exercise against population percentiles
+          (Untrained → Elite). Every exercise counts toward its muscle.
         </p>
       </div>
 
@@ -68,14 +70,14 @@ export default function RankingPage() {
         <RankBodyMap muscleRanks={muscleRanks} activeToday={activeToday} />
       </div>
 
-      {/* Composite Muscle Score Report (RSI) */}
+      {/* Composite Muscle Score Report */}
       <div
         className="rounded-2xl p-4"
         style={{ background: 'var(--bg-surface)', border: 'var(--border-subtle)' }}
       >
-        <p className="text-xs font-semibold mb-1" style={{ color: 'var(--text-muted)' }}>Composite Muscle Scores (RSI)</p>
+        <p className="text-xs font-semibold mb-1" style={{ color: 'var(--text-muted)' }}>Composite Muscle Scores</p>
         <p className="text-[9px] mb-3" style={{ color: 'var(--text-muted)' }}>
-          Each muscle = weighted average of its exercises. Score = (RSI / Elite RSI) × 100, capped at 100. Core uses target-rep completion.
+          Each muscle blends every exercise that targets it, weighted by effectiveness. Score = population percentile (0–100). Core uses rep targets.
         </p>
         <div className="overflow-x-auto">
           <table className="w-full text-[9px]">
@@ -91,8 +93,8 @@ export default function RankingPage() {
             <tbody>
               {muscleScores.map((m) => {
                 const top = m.contributions
-                  .filter((c) => c.exerciseScore > 0)
-                  .sort((a, b) => b.exerciseScore - a.exerciseScore)[0];
+                  .filter((c) => c.pct > 0)
+                  .sort((a, b) => b.pct - a.pct)[0];
                 return (
                   <tr key={m.muscle} style={{ borderTop: '1px solid rgba(255,255,255,0.06)', opacity: m.score > 0 ? 1 : 0.45 }}>
                     <td className="py-1 pr-2 font-semibold" style={{ color: 'rgba(255,255,255,0.85)' }}>{m.muscle}</td>
@@ -124,7 +126,7 @@ export default function RankingPage() {
       >
         <p className="text-xs font-semibold mb-1" style={{ color: 'var(--text-muted)' }}>Muscle Rankings (Composite Score)</p>
         <p className="text-[9px] mb-3" style={{ color: 'var(--text-muted)' }}>
-          Composite muscle score (0–100) from RSI. Core (Abs) is reported separately — it uses target-rep completion, not load.
+          Composite muscle score (0–100 population percentile) from every mapped exercise. Core (Abs) uses target-rep completion.
         </p>
         <div className="space-y-2">
           {muscleRanks.map((mr) => {
