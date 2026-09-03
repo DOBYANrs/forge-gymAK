@@ -117,7 +117,7 @@ export default function RankingPage() {
           </table>
         </div>
         <p className="text-[9px] mt-2" style={{ color: 'var(--text-muted)' }}>
-          Dimmed rows have no logged sets (or no weight) in the last 30 days. Adductors have no direct exercise and mirror the status quo.
+          Dimmed rows have no logged sets at all (or no weight) across your whole history. Adductors have no direct exercise and mirror the status quo.
         </p>
       </div>
 

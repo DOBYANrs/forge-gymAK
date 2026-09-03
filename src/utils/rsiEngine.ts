@@ -277,18 +277,17 @@ export function bestLogForExercise(
   workoutData: Record<string, Record<string, { exercises: ExerciseLog[] } | undefined>>,
   userId: UserId,
   exerciseName: string,
-  now: Date = new Date(),
+  _now: Date = new Date(),
 ): BestLog | null {
-  const cutoff = new Date(now);
-  cutoff.setDate(cutoff.getDate() - 30);
+  // Lifetime lookup: consider the user's ALL-time training history (not just the
+  // last 30 days) so muscles trained weeks/months ago still score and show on the
+  // muscle heatmap. The `now` argument is kept for API compatibility but ignored.
+  void _now; // eslint-disable-line no-unused-vars
   const userData = workoutData[userId] ?? {};
   let best: BestLog | null = null;
 
   for (const [dateKey, day] of Object.entries(userData)) {
     if (!day?.exercises) continue;
-    const [y, m, d] = dateKey.split('-').map(Number);
-    const dayDate = new Date(y, m - 1, d);
-    if (dayDate < cutoff) continue;
 
     for (const exercise of day.exercises) {
       if (exercise.exerciseName !== exerciseName) continue;

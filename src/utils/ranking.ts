@@ -1,4 +1,5 @@
 import type { ExerciseLog, UserId } from '../types';
+import { getDaySchedule } from '../data/schedule';
 import {
   SCIENTIFIC_TIERS,
   DEFAULT_PROFILES,
@@ -385,21 +386,39 @@ export function tierInfoForLevel(level: number): TierInfo {
   return SCIENTIFIC_TIERS[Math.max(0, Math.min(level, SCIENTIFIC_TIERS.length - 1))];
 }
 
-function todayKey(): string {
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = String(now.getMonth() + 1).padStart(2, '0');
-  const d = String(now.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
-}
-
 /**
- * Returns the muscle groups a user activated today (primary + secondary),
+ * Returns the muscle groups a user trains TODAY according to the schedule,
  * used to drive the daily-active pulse on the social / ranking body map.
+ * This reflects the PLANNED muscle group for today (e.g. rest days return []),
+ * not whatever happens to be logged — so the pulse never shows a muscle on a
+ * day the program doesn't call for it.
  */
 export function getTodayActivatedMuscles(
-  workoutData: Record<string, Record<string, { exercises: ExerciseLog[] } | undefined>>,
-  userId: UserId,
+  _workoutData: Record<string, Record<string, { exercises: ExerciseLog[] } | undefined>>,
+  _userId: UserId,
 ): MuscleGroup[] {
-  return getActivatedMusclesOnDate(workoutData, userId, todayKey());
+  const today = getDaySchedule(new Date());
+  // Map the schedule's muscle-group labels onto the body map's canonical names.
+  const MAP: Record<string, MuscleGroup> = {
+    Quads: 'Legs',
+    Legs: 'Legs',
+    Hamstrings: 'Hamstrings',
+    Calves: 'Calves',
+    Abs: 'Abs',
+    Core: 'Core',
+    Chest: 'Chest',
+    Back: 'Back',
+    Shoulders: 'Shoulders',
+    Triceps: 'Triceps',
+    Biceps: 'Biceps',
+    Forearms: 'Forearms',
+    Abductors: 'Abductors',
+    Adductors: 'Adductors',
+  };
+  const out = new Set<MuscleGroup>();
+  for (const group of today.muscleGroups) {
+    const mapped = MAP[group];
+    if (mapped) out.add(mapped);
+  }
+  return Array.from(out);
 }
