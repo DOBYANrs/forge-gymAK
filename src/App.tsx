@@ -4,7 +4,6 @@ import { Routes, Route } from 'react-router-dom';
 import AppShell from './components/layout/AppShell';
 import CharacterSelectPage from './pages/CharacterSelectPage';
 import { useUser } from './context/UserContext';
-import { getStoredUser } from './components/UserSelector';
 import type { UserId } from './types';
 
 const TodayPage = lazy(() => import('./pages/TodayPage'));
@@ -29,9 +28,9 @@ function PageLoader() {
 
 function AppContent() {
   const { setActiveUser } = useUser();
-  // Skip the character selector when a user is already stored, so reloads
-  // (e.g. after importing data) go straight back to the last selected user.
-  const [showSelector, setShowSelector] = useState(() => getStoredUser() === null);
+  // Always show the character selector on load so the user can pick who they are
+  // each time the app is (re)loaded.
+  const [showSelector, setShowSelector] = useState(true);
 
   const handleSelect = (user: UserId) => {
     setActiveUser(user);

@@ -76,7 +76,7 @@ export default function TodayPage() {
   }, [selectedDateKey]);
 
   const dateKey = selectedDateKey;
-  const baseSchedule = getDaySchedule(selectedDate);
+  const baseSchedule = useMemo(() => getDaySchedule(selectedDate), [selectedDate]);
   const dayName = DAY_NAMES[selectedDate.getDay()];
   const lastWeekKey = getLastWeekDateKey(dateKey);
   const isToday = dateKey === todayKey;

@@ -86,18 +86,20 @@ export default function BodyHeatmap3D({ muscleScores, height = 400 }: BodyHeatma
     }
     const tier = score.tier;
     const baseColor = new THREE.Color(tier.color);
-    const brightColor = baseColor.clone().lerp(new THREE.Color(0xffffff), 0.15);
+    // Keep the same hue but render it darker and more saturated so it clearly
+    // pops against the dark silver body instead of washing out.
+    const surfaceColor = baseColor.clone().multiplyScalar(0.6);
     let emissiveStrength: number;
     switch (tier.name) {
-      case 'Legendary': emissiveStrength = 1.8; break;
-      case 'Elite': emissiveStrength = 1.4; break;
-      case 'Advanced': emissiveStrength = 1.0; break;
-      case 'Intermediate': emissiveStrength = 0.7; break;
-      case 'Novice': emissiveStrength = 0.5; break;
-      default: emissiveStrength = 0.2;
+      case 'Legendary': emissiveStrength = 1.2; break;
+      case 'Elite': emissiveStrength = 1.0; break;
+      case 'Advanced': emissiveStrength = 0.75; break;
+      case 'Intermediate': emissiveStrength = 0.55; break;
+      case 'Novice': emissiveStrength = 0.4; break;
+      default: emissiveStrength = 0.15;
     }
     const emissive = baseColor.clone().multiplyScalar(emissiveStrength);
-    return { color: brightColor, emissive, emissiveIntensity: emissiveStrength * 0.8 };
+    return { color: surfaceColor, emissive, emissiveIntensity: emissiveStrength * 0.7 };
   }
 
   useEffect(() => {
