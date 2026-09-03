@@ -7,7 +7,7 @@ import { exportAllData, importAllData, downloadJsonFile, readJsonFile } from '..
 export default function SettingsPage() {
   const { activeUser } = useUser();
   const colors = USER_COLORS[activeUser];
-  const { importData, clearAllData } = useWorkout();
+  const { clearAllData } = useWorkout();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importStatus, setImportStatus] = useState<{ success: boolean; message: string } | null>(null);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
@@ -24,10 +24,7 @@ export default function SettingsPage() {
 
     try {
       const data = (await readJsonFile(file)) as Record<string, unknown>;
-      if (data.workouts) {
-        importData(data.workouts as Parameters<typeof importData>[0]);
-      }
-      const result = importAllData(data);
+      const result = importAllData(data, activeUser);
       setImportStatus(result);
       if (result.success) {
         window.location.reload();

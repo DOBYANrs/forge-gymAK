@@ -1,4 +1,4 @@
-import type { WorkoutData, BodyMetricsData } from '../types';
+import type { WorkoutData, BodyMetricsData, DayWorkout, UserId } from '../types';
 
 const SCHEDULE_KEY = 'kasaint_gym_custom_schedule';
 const SCHEDULE_VERSION_KEY = 'kasaint_gym_schedule_version';
@@ -33,18 +33,79 @@ export function exportAllData(): {
   };
 }
 
-export function importAllData(data: {
-  workouts?: WorkoutData;
-  bodyMetrics?: BodyMetricsData;
-  customSchedule?: Record<string, unknown>;
-  deletedExercises?: Record<string, number[]>;
-  scheduleVersion?: string;
-}): { success: boolean; message: string } {
+// A day counts as "filled" when the user has actually logged at least one set
+// (weight, reps, or a completed set). Empty template days (all 0 / 0) do not count.
+function hasRealSetData(day: DayWorkout | undefined): boolean {
+  if (!day) return false;
+  if (day.completed) return true;
+  return day.exercises.some((ex) =>
+    ex.sets.some((s) => s.weightKg > 0 || s.reps > 0 || s.completed)
+  );
+}
+
+// When Keneni imports an export that was saved under another user, both train
+// roughly the same weights/reps, so we carry the other person's workout days and
+// body metrics into the ACTIVE user's slot whenever the active user is missing
+// that day or only has an empty template. The active user's real entries are kept.
+function mergeIntoActiveUser(
+  activeUser: UserId,
+  workouts: WorkoutData,
+  bodyMetrics: BodyMetricsData
+): { workouts: WorkoutData; bodyMetrics: BodyMetricsData } {
+  const resultWorkouts: WorkoutData = structuredClone(workouts);
+  const activeDays = workouts[activeUser] ?? {};
+
+  for (const other of Object.keys(workouts).filter((u) => u !== activeUser)) {
+    const otherDays = workouts[other] ?? {};
+    for (const [dateKey, day] of Object.entries(otherDays)) {
+      if (!day) continue;
+      const existing = activeDays[dateKey];
+      // Only fill empty / missing days so we never clobber the user's own logged sets.
+      if (!existing || !hasRealSetData(existing)) {
+        if (!resultWorkouts[activeUser]) resultWorkouts[activeUser] = {};
+        resultWorkouts[activeUser][dateKey] = structuredClone(day);
+      }
+    }
+  }
+
+  const resultBody: BodyMetricsData = structuredClone(bodyMetrics);
+  const activeBody = bodyMetrics[activeUser] ?? {};
+  for (const other of Object.keys(bodyMetrics).filter((u) => u !== activeUser)) {
+    const otherBody = bodyMetrics[other] ?? {};
+    for (const [dateKey, metric] of Object.entries(otherBody)) {
+      if (!metric) continue;
+      if (!activeBody[dateKey]) {
+        if (!resultBody[activeUser]) resultBody[activeUser] = {};
+        resultBody[activeUser][dateKey] = structuredClone(metric);
+      }
+    }
+  }
+
+  return { workouts: resultWorkouts, bodyMetrics: resultBody };
+}
+
+export function importAllData(
+  data: {
+    workouts?: WorkoutData;
+    bodyMetrics?: BodyMetricsData;
+    customSchedule?: Record<string, unknown>;
+    deletedExercises?: Record<string, number[]>;
+    scheduleVersion?: string;
+  },
+  activeUser: UserId
+): { success: boolean; message: string } {
   try {
     if (data.workouts) {
-      localStorage.setItem('kasaint_gym_workout_data', JSON.stringify(data.workouts));
-    }
-    if (data.bodyMetrics) {
+      const merged = mergeIntoActiveUser(
+        activeUser,
+        data.workouts,
+        data.bodyMetrics ?? {}
+      );
+      localStorage.setItem('kasaint_gym_workout_data', JSON.stringify(merged.workouts));
+      if (data.bodyMetrics) {
+        localStorage.setItem('kasaint_gym_body_metrics', JSON.stringify(merged.bodyMetrics));
+      }
+    } else if (data.bodyMetrics) {
       localStorage.setItem('kasaint_gym_body_metrics', JSON.stringify(data.bodyMetrics));
     }
     if (data.customSchedule) {

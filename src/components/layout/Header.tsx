@@ -1,10 +1,12 @@
 import { useState, useRef } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useTimer } from '../../context/TimerContext';
+import { useUser } from '../../context/UserContext';
 import { exportAllData, downloadJsonFile, readJsonFile, importAllData } from '../../services/storage';
 
 export default function Header() {
   const { startTimer } = useTimer();
+  const { activeUser } = useUser();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showBackupMenu, setShowBackupMenu] = useState(false);
 
@@ -25,7 +27,7 @@ export default function Header() {
     if (!file) return;
     try {
       const data = await readJsonFile(file);
-      const result = importAllData(data as Record<string, unknown>);
+      const result = importAllData(data as Record<string, unknown>, activeUser);
       alert(result.message);
       if (result.success) {
         // Tell AppContent to skip the character selector after this reload so
