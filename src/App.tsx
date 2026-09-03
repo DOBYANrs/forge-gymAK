@@ -28,9 +28,15 @@ function PageLoader() {
 
 function AppContent() {
   const { setActiveUser } = useUser();
-  // Always show the character selector on load so the user can pick who they are
-  // each time the app is (re)loaded.
-  const [showSelector, setShowSelector] = useState(true);
+  // Always show the character selector on a normal (re)load so the user can pick
+  // who they are. But skip it right after a backup import, because the import
+  // flow itself reloads the page and we don't want to bounce the user back to
+  // the character-selection screen after restoring their data.
+  const [showSelector, setShowSelector] = useState(() => {
+    const justImported = sessionStorage.getItem('kasaint_gym_just_imported') === '1';
+    sessionStorage.removeItem('kasaint_gym_just_imported');
+    return !justImported;
+  });
 
   const handleSelect = (user: UserId) => {
     setActiveUser(user);

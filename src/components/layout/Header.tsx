@@ -27,7 +27,12 @@ export default function Header() {
       const data = await readJsonFile(file);
       const result = importAllData(data as Record<string, unknown>);
       alert(result.message);
-      if (result.success) window.location.reload();
+      if (result.success) {
+        // Tell AppContent to skip the character selector after this reload so
+        // importing a backup doesn't bounce the user back to "Who's training?".
+        sessionStorage.setItem('kasaint_gym_just_imported', '1');
+        window.location.reload();
+      }
     } catch (error) {
       alert('Import failed: ' + (error instanceof Error ? error.message : 'Unknown error'));
     }
