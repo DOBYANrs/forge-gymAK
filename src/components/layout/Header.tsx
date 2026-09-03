@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { NavLink } from 'react-router-dom';
 import { useTimer } from '../../context/TimerContext';
 import { exportAllData, downloadJsonFile, readJsonFile, importAllData } from '../../services/storage';
 
@@ -50,6 +51,17 @@ export default function Header() {
             </span>
           </div>
           <div className="flex items-center gap-2 relative">
+            <NavLink
+              to="/body"
+              className="w-9 h-9 rounded-lg flex items-center justify-center text-lg transition-all duration-200 active:scale-90"
+              style={({ isActive }) => ({
+                background: isActive ? 'rgba(255,94,0,0.1)' : 'transparent',
+                color: isActive ? '#FF5E00' : 'rgba(148,163,184,0.6)',
+              })}
+              title="Body metrics (kg & height)"
+            >
+              ⚖️
+            </NavLink>
             <button
               onClick={() => setShowBackupMenu(!showBackupMenu)}
               className="w-9 h-9 rounded-lg flex items-center justify-center text-lg transition-all duration-200 active:scale-90"

@@ -5,6 +5,7 @@ import { useBody } from '../context/BodyContext';
 import { useSchedule } from '../context/ScheduleContext';
 import { getDaySchedule } from '../data/schedule';
 import { formatDateKey, getLastWeekDateKey } from '../utils/dates';
+import type { DayOfWeek } from '../types';
 import WorkoutCard from '../components/today/WorkoutCard';
 import AddExerciseModal from '../components/today/AddExerciseModal';
 import RestTimerBar from '../components/today/RestTimerBar';
@@ -59,8 +60,8 @@ function getWeekDays(date: Date): { date: Date; dateKey: string; dayName: string
 export default function TodayPage() {
   const { activeUser } = useUser();
   const { getLatestProfile } = useBody();
-  const { getDayWorkout, updateDayExercises, deletedExercises, deleteExerciseFromDay, moveExercise, toggleCompleted, workoutData } = useWorkout();
-  const { getScheduleForDay } = useSchedule();
+  const { getDayWorkout, updateDayExercises, deleteExerciseFromDay, moveExercise, toggleCompleted, workoutData } = useWorkout();
+  const { getScheduleForDay, setDaySchedule, updateExerciseInSchedule } = useSchedule();
   const [showAddModal, setShowAddModal] = useState(false);
 
   const today = new Date();
@@ -101,7 +102,28 @@ export default function TodayPage() {
 
   // Determine the dayOfWeek for selected date to filter deleted exercises
   const daysOfWeek = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-  const selectedDayOfWeek = daysOfWeek[selectedDate.getDay()];
+  const selectedDayOfWeek = daysOfWeek[selectedDate.getDay()] as DayOfWeek;
+
+  // The schedule plan (getScheduleForDay) is the single source of truth for each
+  // day's exercise structure. Structural edits made here are written straight
+  // back into the shared plan so the Schedule section stays in sync.
+
+  // Delete an exercise from today AND from the shared schedule plan.
+  const handleDeleteExercise = (exerciseIndex: number) => {
+    const newPlan = schedule.exercises.filter((_, i) => i !== exerciseIndex);
+    setDaySchedule(selectedDayOfWeek, newPlan);
+    deleteExerciseFromDay(activeUser, dateKey, exerciseIndex);
+  };
+
+  // When the number of sets for an exercise changes in Today, mirror it into the
+  // plan's defaultSets (matched by exercise name) so the Schedule section updates.
+  const handleSetCountChange = (exerciseName: string, newDefaultSets: number) => {
+    const idx = schedule.exercises.findIndex((ex) => ex.name === exerciseName);
+    if (idx === -1) return;
+    const current = schedule.exercises[idx];
+    if (current.defaultSets === newDefaultSets) return;
+    updateExerciseInSchedule(selectedDayOfWeek, idx, { ...current, defaultSets: newDefaultSets });
+  };
 
   // Initialize/update the day's workout from schedule (preserves existing set data)
   useEffect(() => {
@@ -116,12 +138,10 @@ export default function TodayPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeUser, dateKey, schedule.exercises]);
 
-  // After ensureDayExists runs, todayWorkout will be populated with the synced exercises
-  // Filter out exercises that were deleted from the shared schedule
-  const deletedIndices: number[] = deletedExercises[selectedDayOfWeek] ?? [];
-
-  // Use workout data if available, otherwise fall back to schedule exercises
-  // This ensures the UI shows exercises even before useEffect populates workout data
+  // Use workout data if available, otherwise fall back to schedule exercises.
+  // This ensures the UI shows exercises even before the effect populates workout data.
+  // The schedule plan (schedule.exercises) is the authoritative exercise list for
+  // the day — deletions/adds are already reflected in it, so no extra filtering here.
   const workoutExercises = todayWorkout?.exercises;
   const displayExercises = workoutExercises && workoutExercises.length > 0
     ? workoutExercises
@@ -131,11 +151,8 @@ export default function TodayPage() {
         sets: Array.from({ length: e.defaultSets }, () => ({ weightKg: 0, reps: 0, timestamp: 0 })),
       }));
 
-  const exercises = displayExercises.filter((_, i) => !deletedIndices.includes(i));
-  // Get the original indices for the filtered exercises
-  const exerciseIndices = displayExercises
-    .map((_, i) => i)
-    .filter((i) => !deletedIndices.includes(i));
+  const exercises = displayExercises;
+  const exerciseIndices = displayExercises.map((_, i) => i);
   const hasStarted = displayExercises.length > 0;
   const isCompleted = todayWorkout?.completed ?? false;
 
@@ -403,7 +420,8 @@ export default function TodayPage() {
               exerciseIndex={exerciseIndices[i]}
               dateKey={dateKey}
               previousExercise={lastWeekWorkout?.exercises[exerciseIndices[i]]}
-              onDelete={() => deleteExerciseFromDay(activeUser, dateKey, exerciseIndices[i])}
+              onDelete={() => handleDeleteExercise(exerciseIndices[i])}
+              onSetCountChange={handleSetCountChange}
               onMoveUp={() => moveExercise(activeUser, dateKey, exerciseIndices[i], exerciseIndices[i - 1])}
               onMoveDown={() => moveExercise(activeUser, dateKey, exerciseIndices[i], exerciseIndices[i + 1])}
               isFirst={i === 0}
@@ -564,6 +582,7 @@ export default function TodayPage() {
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
         dateKey={dateKey}
+        dayOfWeek={selectedDayOfWeek}
       />
 
       {/* Sticky rest timer bar */}

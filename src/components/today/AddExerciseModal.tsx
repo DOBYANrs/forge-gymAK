@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { useUser } from '../../context/UserContext';
 import { useWorkout } from '../../context/WorkoutContext';
-import type { ExercisePattern } from '../../types';
+import { useSchedule } from '../../context/ScheduleContext';
+import type { ExercisePattern, DayOfWeek } from '../../types';
 
 interface AddExerciseModalProps {
   isOpen: boolean;
   onClose: () => void;
   dateKey: string;
+  dayOfWeek: DayOfWeek;
 }
 
 const patterns: { value: ExercisePattern; label: string }[] = [
@@ -16,9 +18,10 @@ const patterns: { value: ExercisePattern; label: string }[] = [
   { value: 'pyramid', label: 'Pyramid' },
 ];
 
-export default function AddExerciseModal({ isOpen, onClose, dateKey }: AddExerciseModalProps) {
+export default function AddExerciseModal({ isOpen, onClose, dateKey, dayOfWeek }: AddExerciseModalProps) {
   const { activeUser } = useUser();
   const { addExercise } = useWorkout();
+  const { addExerciseToSchedule } = useSchedule();
 
   const [exerciseName, setExerciseName] = useState('');
   const [pattern, setPattern] = useState<ExercisePattern>('normal');
@@ -30,6 +33,11 @@ export default function AddExerciseModal({ isOpen, onClose, dateKey }: AddExerci
     e.preventDefault();
     if (!exerciseName.trim()) return;
     addExercise(activeUser, dateKey, exerciseName.trim(), pattern, numSets);
+    addExerciseToSchedule(dayOfWeek, {
+      name: exerciseName.trim(),
+      pattern,
+      defaultSets: numSets,
+    });
     setExerciseName('');
     setPattern('normal');
     setNumSets(4);

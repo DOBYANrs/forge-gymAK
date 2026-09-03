@@ -81,7 +81,7 @@ export const EXERCISE_MUSCLE_MAP: Record<string, string[]> = {
   'Row Machine 1 Var 2': ['Back', 'Biceps'],
   '1-Hand Lat Pulldown': ['Back', 'Biceps'],
   'Archer Pull': ['Back', 'Biceps'],
-  'Rear Delt Row': ['Shoulders', 'Back'],
+  'Bent-Over Dumbbell Reverse Fly': ['Shoulders', 'Back'],
   'Face Pulls': ['Shoulders', 'Back', 'Core'],
   'Front Lever Progression': ['Back', 'Core', 'Abs'],
   'Dead Hang': ['Back', 'Forearms'],

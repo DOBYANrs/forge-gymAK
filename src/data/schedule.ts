@@ -110,10 +110,10 @@ export const DAY_OF_WEEK_MAP: Record<string, string> = {
 
 // ─── Biweekly rear-delt rotation (Thursday) ────────────────
 // Archer Pull trains every other week; the intervening weeks swap in a
-// rear-delt row instead. Both target the rear delts / upper back.
+// Bent-Over Dumbbell Reverse Fly instead. Both target the rear delts / upper back.
 const BIWEEKLY_DELT: PresetExercise[] = [
   { name: 'Archer Pull', pattern: 'normal', defaultSets: 3, targetReps: '8–10', restSeconds: 90 },
-  { name: 'Rear Delt Row', pattern: 'normal', defaultSets: 3, targetReps: '10–12', restSeconds: 75 },
+  { name: 'Bent-Over Dumbbell Reverse Fly', pattern: 'normal', defaultSets: 3, targetReps: '10–12', restSeconds: 75 },
 ];
 
 // Stable alternating week slot: 0 and 1 flip every 7 days from a fixed epoch,

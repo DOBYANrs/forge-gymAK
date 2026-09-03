@@ -68,6 +68,7 @@ export const EXERCISE_TO_LIFT: Record<string, LiftMapping> = {
   'Row Machine 2 Var 2': M('Deadlift', 0.9, true),
   'Row Machine 1 Var 2': M('Deadlift', 0.9, true),
   'Archer Pull': M('Deadlift', 1.0, true),
+  'Bent-Over Dumbbell Reverse Fly': M('Deadlift', 0.9, true),
   'Face Pulls': M('Deadlift', 1.0, true),
   // Squat family (leg press → squat proxy)
   'Low-Foot Placement Leg Press': M('Squat', 0.6, true),

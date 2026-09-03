@@ -1,11 +1,17 @@
-import { useRef, type ReactNode } from 'react';
+import { useRef, type ReactNode, type PointerEvent } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 const TAB_ORDER = ['/', '/schedule', '/ranking', '/muscle360', '/social', '/progress'];
 
 const SWIPE_THRESHOLD = 60;
 const VELOCITY_THRESHOLD = 0.4;
-const MAX_VERTICAL_DRIFT = 80;
+const MAX_VERTICAL_DRIFT = 120;
+
+// Normalise a path for TAB_ORDER matching (handles missing/extra trailing slash).
+function normalizePath(path: string): string {
+  if (path === '/') return '/';
+  return path.replace(/\/+$/, '') || '/';
+}
 
 export default function SwipeNavigator({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
@@ -15,23 +21,24 @@ export default function SwipeNavigator({ children }: { children: ReactNode }) {
   const startY = useRef<number | null>(null);
   const startTime = useRef(0);
 
-  const onTouchStart = (e: React.TouchEvent) => {
-    const touch = e.touches[0];
-    startX.current = touch.clientX;
-    startY.current = touch.clientY;
+  const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
+    // Only track primary pointers (mouse left button / first touch finger).
+    if (!e.isPrimary) return;
+    startX.current = e.clientX;
+    startY.current = e.clientY;
     startTime.current = performance.now();
   };
 
-  const onTouchEnd = (e: React.TouchEvent) => {
+  const finishSwipe = (clientX: number, clientY: number) => {
     if (startX.current === null || startY.current === null) return;
-    const touch = e.changedTouches[0];
-    const dx = touch.clientX - startX.current;
-    const dy = touch.clientY - startY.current;
+    const dx = clientX - startX.current;
+    const dy = clientY - startY.current;
     const dt = performance.now() - startTime.current;
 
     startX.current = null;
     startY.current = null;
 
+    // Ignore vertical scrolls / taps.
     if (Math.abs(dy) > MAX_VERTICAL_DRIFT) return;
     if (Math.abs(dx) < SWIPE_THRESHOLD) return;
 
@@ -39,7 +46,7 @@ export default function SwipeNavigator({ children }: { children: ReactNode }) {
     const isSwipe = Math.abs(dx) > SWIPE_THRESHOLD || velocity > VELOCITY_THRESHOLD;
     if (!isSwipe) return;
 
-    const currentIndex = TAB_ORDER.indexOf(location.pathname);
+    const currentIndex = TAB_ORDER.indexOf(normalizePath(location.pathname));
     if (currentIndex === -1) return;
 
     const direction = dx < 0 ? 1 : -1;
@@ -49,11 +56,22 @@ export default function SwipeNavigator({ children }: { children: ReactNode }) {
     navigate(TAB_ORDER[nextIndex]);
   };
 
+  const onPointerUp = (e: PointerEvent<HTMLDivElement>) => {
+    if (!e.isPrimary) return;
+    finishSwipe(e.clientX, e.clientY);
+  };
+
+  const onPointerCancel = () => {
+    startX.current = null;
+    startY.current = null;
+  };
+
   return (
     <div
       className="h-full"
-      onTouchStart={onTouchStart}
-      onTouchEnd={onTouchEnd}
+      onPointerDown={onPointerDown}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerCancel}
       style={{ touchAction: 'pan-y' }}
     >
       {children}

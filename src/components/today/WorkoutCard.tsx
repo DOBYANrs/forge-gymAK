@@ -15,13 +15,14 @@ interface WorkoutCardProps {
   dateKey: string;
   previousExercise?: ExerciseLog;
   onDelete?: () => void;
+  onSetCountChange?: (exerciseName: string, newDefaultSets: number) => void;
   onMoveUp?: () => void;
   onMoveDown?: () => void;
   isFirst?: boolean;
   isLast?: boolean;
 }
 
-export default function WorkoutCard({ exercise, exerciseIndex, dateKey, previousExercise, onDelete, onMoveUp, onMoveDown, isFirst, isLast }: WorkoutCardProps) {
+export default function WorkoutCard({ exercise, exerciseIndex, dateKey, previousExercise, onDelete, onSetCountChange, onMoveUp, onMoveDown, isFirst, isLast }: WorkoutCardProps) {
   const { activeUser } = useUser();
   const colors = USER_COLORS[activeUser];
   const { updateSet, addSet, removeSet, toggleSetComplete } = useWorkout();
@@ -57,10 +58,13 @@ export default function WorkoutCard({ exercise, exerciseIndex, dateKey, previous
 
   const handleAddSet = () => {
     addSet(activeUser, dateKey, exerciseIndex);
+    if (onSetCountChange) onSetCountChange(exercise.exerciseName, exercise.sets.length + 1);
   };
 
   const handleRemoveSet = (setIndex: number) => {
+    if (exercise.sets.length <= 1) return;
     removeSet(activeUser, dateKey, exerciseIndex, setIndex);
+    if (onSetCountChange) onSetCountChange(exercise.exerciseName, exercise.sets.length - 1);
   };
 
   return (
