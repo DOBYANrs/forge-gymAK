@@ -55,7 +55,7 @@ export default function Muscle360Viewer({
     const h = height;
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x050508);
+    scene.background = new THREE.Color(0x000000);
 
     const camera = new THREE.PerspectiveCamera(40, w / h, 0.1, 100);
     camera.position.set(0, 0.3, 5.4);
@@ -65,7 +65,7 @@ export default function Muscle360Viewer({
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(w, h);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.setClearColor(0x050508, 1);
+    renderer.setClearColor(0x000000, 1);
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = EXPOSURE;
     container.appendChild(renderer.domElement);
@@ -91,7 +91,7 @@ export default function Muscle360Viewer({
     rimCool.position.set(3, 1.5, -3);
     scene.add(rimCool);
 
-    scene.fog = new THREE.FogExp2(0x050508, 0.06);
+    scene.fog = new THREE.FogExp2(0x000000, 0.06);
 
     const ground = new THREE.Mesh(
       new THREE.CircleGeometry(4.4, 48),
@@ -260,7 +260,7 @@ export default function Muscle360Viewer({
       <div ref={mountRef} className="w-full h-full rounded-xl overflow-hidden" />
 
       {!ready && (
-        <div className="absolute inset-0 flex items-center justify-center rounded-xl" style={{ background: '#050508' }}>
+        <div className="absolute inset-0 flex items-center justify-center rounded-xl" style={{ background: '#000000' }}>
           <div className="text-center">
             <div className="w-12 h-12 border-2 border-[#FF5E00] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
             <p className="text-xs font-medium" style={{ color: 'rgba(148,163,184,0.6)' }}>

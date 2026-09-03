@@ -165,6 +165,7 @@ const EXERCISE_TO_MUSCLES: Record<string, MuscleContribution> = {
   'Row Machine 1 Var 2':              helpers.ps(['Back'], ['Biceps'], 0.15),
   '1-Hand Lat Pulldown':              helpers.ps(['Back'], ['Biceps'], 0.15),
   'Archer Pull':                      helpers.ps(['Back'], ['Biceps'], 0.15),
+  'Rear Delt Row':                    helpers.ps(['Shoulders'], ['Back'], 0.15),
   'Face Pulls':                       helpers.ps(['Shoulders', 'Back'], ['Core'], 0.10),
   'Front Lever Progression':          helpers.ps(['Back', 'Abs'], ['Core'], 0.15),
   'Dead Hang':                        helpers.ps(['Back'], ['Forearms'], 0.15),

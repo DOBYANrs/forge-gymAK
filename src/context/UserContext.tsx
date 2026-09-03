@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, type ReactNode } from 'react';
 import type { UserId } from '../types';
+import { getStoredUser } from '../components/UserSelector';
 
 interface UserContextType {
   activeUser: UserId;
@@ -9,7 +10,7 @@ interface UserContextType {
 const UserContext = createContext<UserContextType | null>(null);
 
 export function UserProvider({ children }: { children: ReactNode }) {
-  const [activeUser, setActiveUser] = useState<UserId>('abel');
+  const [activeUser, setActiveUser] = useState<UserId>(() => getStoredUser() ?? 'abel');
 
   return (
     <UserContext.Provider value={{ activeUser, setActiveUser }}>

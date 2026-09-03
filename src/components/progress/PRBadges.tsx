@@ -1,12 +1,11 @@
 import { useMemo } from 'react';
 import type { UserId } from '../../types';
 import { useWorkout } from '../../context/WorkoutContext';
-import { calculateExercise1RM, calculateVolume } from '../../utils/calculations';
+import { calculateMaxWeight } from '../../utils/calculations';
 
 interface PRInfo {
   exercise: string;
-  oneRM: number;
-  volume: number;
+  weightKg: number;
   dateKey: string;
 }
 
@@ -21,22 +20,21 @@ export function usePRData(userId: UserId) {
     for (const [dateKey, day] of Object.entries(userData)) {
       if (!day?.exercises) continue;
       for (const exercise of day.exercises) {
-        const oneRM = calculateExercise1RM(exercise);
-        const volume = calculateVolume(exercise);
-        if (oneRM > 0 || volume > 0) {
+        const weightKg = calculateMaxWeight(exercise);
+        if (weightKg > 0) {
           if (!exerciseHistory[exercise.exerciseName]) {
             exerciseHistory[exercise.exerciseName] = [];
           }
-          exerciseHistory[exercise.exerciseName].push({ exercise: exercise.exerciseName, oneRM, volume, dateKey });
+          exerciseHistory[exercise.exerciseName].push({ exercise: exercise.exerciseName, weightKg, dateKey });
         }
       }
     }
 
-    // Find PRs (best 1RM per exercise)
+    // Find PRs (heaviest weight lifted per exercise)
     const prs: PRInfo[] = [];
     for (const [, history] of Object.entries(exerciseHistory)) {
-      const sorted = [...history].sort((a, b) => b.oneRM - a.oneRM);
-      if (sorted.length > 0 && sorted[0].oneRM > 0) {
+      const sorted = [...history].sort((a, b) => b.weightKg - a.weightKg);
+      if (sorted.length > 0 && sorted[0].weightKg > 0) {
         prs.push(sorted[0]);
       }
     }
@@ -115,7 +113,7 @@ export default function PRBadges({ userId }: { userId: UserId }) {
                   <span className="text-sm">🏆</span>
                   <span className="text-xs font-medium" style={{ color: 'rgba(255,255,255,0.9)' }}>{pr.exercise}</span>
                 </div>
-                <span className="text-xs font-bold" style={{ color: '#FF5E00' }}>{pr.oneRM} kg</span>
+                <span className="text-xs font-bold" style={{ color: '#FF5E00' }}>{pr.weightKg} kg</span>
               </div>
             ))}
           </div>

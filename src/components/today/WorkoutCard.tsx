@@ -1,10 +1,13 @@
 import { useState, useRef, useCallback } from 'react';
 import { useUser } from '../../context/UserContext';
 import { useWorkout } from '../../context/WorkoutContext';
+import { useBody } from '../../context/BodyContext';
 import { useTimer } from '../../context/TimerContext';
 import { USER_COLORS } from '../../types';
 import type { ExerciseLog } from '../../types';
 import SetRow from './SetRow';
+
+const BODYWEIGHT_TIMED_EXERCISES = new Set(['Dead Hang']);
 
 interface WorkoutCardProps {
   exercise: ExerciseLog;
@@ -22,11 +25,16 @@ export default function WorkoutCard({ exercise, exerciseIndex, dateKey, previous
   const { activeUser } = useUser();
   const colors = USER_COLORS[activeUser];
   const { updateSet, addSet, removeSet, toggleSetComplete } = useWorkout();
+  const { getLatestProfile } = useBody();
   const { startTimer } = useTimer();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
-  const totalVolume = exercise.sets.reduce((sum, s) => sum + s.weightKg * s.reps, 0);
+  const isBodyweightTimed = BODYWEIGHT_TIMED_EXERCISES.has(exercise.exerciseName);
+  const bodyWeight = getLatestProfile(activeUser).bodyWeightKg;
+  const totalVolume = isBodyweightTimed
+    ? 0
+    : exercise.sets.reduce((sum, s) => sum + s.weightKg * s.reps, 0);
 
   // Spotlight tracking (Aceternity-style)
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
@@ -145,10 +153,14 @@ export default function WorkoutCard({ exercise, exerciseIndex, dateKey, previous
           {/* Column headers */}
           <div className="flex items-center gap-3 pl-8 mb-1">
             <div className="flex-1 text-center">
-              <span className="text-[10px] font-medium uppercase tracking-wider" style={{ color: 'rgba(148,163,184,0.4)' }}>Weight</span>
+              <span className="text-[10px] font-medium uppercase tracking-wider" style={{ color: 'rgba(148,163,184,0.4)' }}>
+                {isBodyweightTimed ? 'Bodyweight' : 'Weight'}
+              </span>
             </div>
             <div className="flex-1 text-center">
-              <span className="text-[10px] font-medium uppercase tracking-wider" style={{ color: 'rgba(148,163,184,0.4)' }}>Reps</span>
+              <span className="text-[10px] font-medium uppercase tracking-wider" style={{ color: 'rgba(148,163,184,0.4)' }}>
+                {isBodyweightTimed ? 'Time (s)' : 'Reps'}
+              </span>
             </div>
           </div>
 
@@ -160,6 +172,8 @@ export default function WorkoutCard({ exercise, exerciseIndex, dateKey, previous
                 setIndex={i}
                 setData={set}
                 previousSet={previousExercise?.sets[i]}
+                isBodyweightTimed={isBodyweightTimed}
+                bodyWeight={bodyWeight}
                 onUpdate={(kg, reps) => handleUpdateSet(i, kg, reps)}
                 onToggleComplete={() => handleToggleComplete(i)}
                 onRemove={() => handleRemoveSet(i)}

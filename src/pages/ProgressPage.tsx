@@ -7,9 +7,9 @@ import { useUser } from '../context/UserContext';
 import { useWorkout } from '../context/WorkoutContext';
 import { USER_COLORS } from '../types';
 import type { UserId } from '../types';
-import { WEEKLY_SCHEDULE } from '../data/schedule';
 import { calculateVolume, EXERCISE_MUSCLE_MAP } from '../utils/calculations';
 import { formatDisplayDate, getDayName } from '../utils/dates';
+import { getWeekSchedule } from '../data/schedule';
 
 type ChartView = 'exercise' | 'muscle' | 'compare';
 
@@ -35,7 +35,7 @@ export default function ProgressPage() {
 
   const allExercises = useMemo(() => {
     const set = new Set<string>();
-    WEEKLY_SCHEDULE.forEach((day) => {
+    getWeekSchedule(new Date()).forEach((day) => {
       day.exercises.forEach((e) => set.add(e.name));
     });
     for (const userId of ['abel', 'keneni'] as UserId[]) {
@@ -204,7 +204,7 @@ export default function ProgressPage() {
             <label className="block text-sm font-medium mb-2" style={{ color: 'rgba(148,163,184,0.7)' }}>Day of Week</label>
             <select value={selectedDay} onChange={(e) => setSelectedDay(e.target.value)} className="input-field text-left">
               <option value="all">All Days</option>
-              {WEEKLY_SCHEDULE.filter((d) => !d.isRestDay).map((day) => (
+              {getWeekSchedule(new Date()).filter((d) => !d.isRestDay).map((day) => (
                 <option key={day.dayOfWeek} value={day.dayOfWeek}>{day.label}</option>
               ))}
             </select>

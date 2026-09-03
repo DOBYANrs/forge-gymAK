@@ -6,16 +6,30 @@ interface SetRowProps {
   setIndex: number;
   setData: SetRecord;
   previousSet?: SetRecord;
+  isBodyweightTimed?: boolean;
+  bodyWeight?: number;
   onUpdate: (weightKg: number, reps: number) => void;
   onToggleComplete?: () => void;
   onRemove?: () => void;
   canRemove: boolean;
 }
 
-export default function SetRow({ setIndex, setData, previousSet, onUpdate, onToggleComplete, onRemove, canRemove }: SetRowProps) {
+export default function SetRow({ setIndex, setData, previousSet, isBodyweightTimed, bodyWeight = 0, onUpdate, onToggleComplete, onRemove, canRemove }: SetRowProps) {
   const { activeUser } = useUser();
   const colors = USER_COLORS[activeUser];
   const isCompleted = setData.completed ?? false;
+
+  // Bodyweight-timed exercises (e.g. Dead Hang): the first field defaults to
+  // the user's bodyweight and the second field logs hold time in seconds.
+  const weightValue = isBodyweightTimed
+    ? (setData.weightKg > 0 ? setData.weightKg : (bodyWeight || ''))
+    : setData.weightKg;
+  const weightPlaceholder = isBodyweightTimed
+    ? (previousSet && previousSet.weightKg > 0 ? `Prev: ${previousSet.weightKg}` : (bodyWeight ? String(bodyWeight) : 'kg'))
+    : (previousSet && previousSet.weightKg > 0 ? `Prev: ${previousSet.weightKg}` : 'kg');
+  const repsPlaceholder = isBodyweightTimed
+    ? (previousSet && previousSet.reps > 0 ? `Prev: ${previousSet.reps}s` : 'sec')
+    : (previousSet && previousSet.reps > 0 ? `Prev: ${previousSet.reps}` : 'reps');
 
   // Check if this is a PR (heavier than last week)
   const isPR = previousSet && previousSet.weightKg > 0 && setData.weightKg > previousSet.weightKg;
@@ -43,8 +57,8 @@ export default function SetRow({ setIndex, setData, previousSet, onUpdate, onTog
           inputMode="decimal"
           min={0}
           step={0.5}
-          placeholder={previousSet && previousSet.weightKg > 0 ? `Prev: ${previousSet.weightKg}` : 'kg'}
-          value={setData.weightKg || ''}
+          placeholder={weightPlaceholder}
+          value={String(weightValue) || ''}
           onChange={(e) => onUpdate(parseFloat(e.target.value) || 0, setData.reps)}
           className="input-field text-center"
           style={{
@@ -64,16 +78,16 @@ export default function SetRow({ setIndex, setData, previousSet, onUpdate, onTog
 
       <span style={{ color: 'var(--text-muted)' }} className="text-sm font-medium">×</span>
 
-      {/* Reps input */}
+      {/* Reps / Time input */}
       <div className="flex-1">
         <input
           type="number"
           inputMode="numeric"
           min={0}
-          step={1}
-          placeholder={previousSet && previousSet.reps > 0 ? `Prev: ${previousSet.reps}` : 'reps'}
+          step={isBodyweightTimed ? 1 : 1}
+          placeholder={repsPlaceholder}
           value={setData.reps || ''}
-          onChange={(e) => onUpdate(setData.weightKg, parseInt(e.target.value) || 0)}
+          onChange={(e) => onUpdate(isBodyweightTimed ? (setData.weightKg > 0 ? setData.weightKg : bodyWeight) : setData.weightKg, parseInt(e.target.value) || 0)}
           className="input-field text-center"
           style={{
             borderColor: isCompleted ? 'rgba(0, 230, 118, 0.3)' : colors.border,

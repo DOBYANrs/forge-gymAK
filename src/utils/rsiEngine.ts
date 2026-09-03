@@ -127,6 +127,13 @@ export const EXERCISE_STANDARDS: Record<string, ExerciseStandard> = {
       { muscle: 'Shoulders', effectiveness: 0.30 },
     ],
   },
+  'Rear Delt Row': {
+    name: 'Rear Delt Row', rat: [0.30, 0.45, 0.65, 0.90, 1.10], upper: true,
+    targets: [
+      { muscle: 'Shoulders', effectiveness: 0.30 },
+      { muscle: 'Back', effectiveness: 0.20 },
+    ],
+  },
   // ── SHOULDERS ──
   'Overhead Press': {
     name: 'Overhead Press', rat: [0.35, 0.55, 0.75, 1.00, 1.25], upper: true,

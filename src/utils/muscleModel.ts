@@ -22,20 +22,25 @@ export const MESH_TO_MUSCLE: Record<string, MuscleGroup | null> = {
   main_body001: null,
 };
 
-// Steel blue-grey "skin" for the non-muscle parts. Brighter than the old
-// near-black so the body reads clearly against the colored muscles.
-export const NEUTRAL_COLOR = 0x465672;
-export const NEUTRAL_METALNESS = 0.18;
-export const NEUTRAL_ROUGHNESS = 0.4;
-export const NEUTRAL_EMISSIVE_INTENSITY = 0.14;
+// Silver-grey "skin" for the non-muscle parts. Light so the darker ranked
+// muscle groups stand out clearly against the black background.
+export const NEUTRAL_COLOR = 0xB3B7BD;
+export const NEUTRAL_METALNESS = 0.25;
+export const NEUTRAL_ROUGHNESS = 0.5;
+export const NEUTRAL_EMISSIVE_INTENSITY = 0.1;
 
 // Base emissive for ranked muscle groups (they "glow" against the skin).
-export const EMISSIVE_INTENSITY = 0.45;
-export const MUSCLE_METALNESS = 0.15;
-export const MUSCLE_ROUGHNESS = 0.45;
+export const EMISSIVE_INTENSITY = 0.5;
+export const MUSCLE_METALNESS = 0.2;
+export const MUSCLE_ROUGHNESS = 0.5;
+
+// Ranked muscle bodies are darkened a touch so they read as deeper, richer
+// tones against the bright silver skin. Emissive stays at the tier color so
+// they still glow.
+export const MUSCLE_DARKEN = 0.7;
 
 // Shared scene/rendering feel so the intro video and the 360 page match.
-export const EXPOSURE = 2.4;
+export const EXPOSURE = 2.2;
 
 // Pulses the given muscle materials' emissive between a low/high so the
 // ranked groups appear to softly breathe/glow.
@@ -69,7 +74,8 @@ export function applyRankColors(
     if (muscle && rank && (rank.score ?? 0) > 0) {
       // Muscle with real training data -> show its rank tier color.
       const color = new THREE.Color(rank.tier.color);
-      cloned.color.copy(color);
+      const dark = color.clone().multiplyScalar(MUSCLE_DARKEN);
+      cloned.color.copy(dark);
       cloned.emissive.copy(color);
       cloned.emissiveIntensity = EMISSIVE_INTENSITY;
       cloned.metalness = MUSCLE_METALNESS;

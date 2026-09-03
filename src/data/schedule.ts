@@ -1,4 +1,4 @@
-import type { DaySchedule, DayOfWeek } from '../types';
+import type { DaySchedule, DayOfWeek, PresetExercise } from '../types';
 
 export const WEEKLY_SCHEDULE: DaySchedule[] = [
   {
@@ -50,7 +50,7 @@ export const WEEKLY_SCHEDULE: DaySchedule[] = [
       { name: 'Row Machine 1 Var 2', pattern: 'normal', defaultSets: 4, targetReps: '10–12', restSeconds: 90 },
       { name: '1-Hand Lat Pulldown', pattern: 'normal', defaultSets: 3, targetReps: '12–15', restSeconds: 75 },
       { name: 'Overhead Press', pattern: 'normal', defaultSets: 3, targetReps: '8–10', restSeconds: 120 },
-      { name: 'Archer Pull', pattern: 'normal', defaultSets: 3, targetReps: '8–10', restSeconds: 90 },
+      { name: 'Cable Fly', pattern: 'normal', defaultSets: 3, targetReps: '12–15', restSeconds: 60 },
       { name: 'Face Pulls', pattern: 'normal', defaultSets: 3, targetReps: '12–15', restSeconds: 60 },
       { name: 'Front Lever Progression', pattern: 'normal', defaultSets: 3, targetReps: 'Hold/Failure', restSeconds: 120 },
       { name: 'Dead Hang', pattern: 'normal', defaultSets: 3, targetReps: 'Failure', restSeconds: 75, notes: 'Grip & Spinal Decompression' },
@@ -108,6 +108,39 @@ export const DAY_OF_WEEK_MAP: Record<string, string> = {
   saturday: 'saturday',
 };
 
+// ─── Biweekly rear-delt rotation (Thursday) ────────────────
+// Archer Pull trains every other week; the intervening weeks swap in a
+// rear-delt row instead. Both target the rear delts / upper back.
+const BIWEEKLY_DELT: PresetExercise[] = [
+  { name: 'Archer Pull', pattern: 'normal', defaultSets: 3, targetReps: '8–10', restSeconds: 90 },
+  { name: 'Rear Delt Row', pattern: 'normal', defaultSets: 3, targetReps: '10–12', restSeconds: 75 },
+];
+
+// Stable alternating week slot: 0 and 1 flip every 7 days from a fixed epoch,
+// so the pattern is consistent across restarts and users.
+export function getBiweeklySlot(date: Date): number {
+  const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+  return Math.floor(date.getTime() / WEEK_MS) % 2;
+}
+
+// Returns the rear-delt exercise scheduled for the given date's week.
+export function getBiweeklyDeltExercise(date: Date): PresetExercise {
+  return BIWEEKLY_DELT[getBiweeklySlot(date)];
+}
+
+// Full schedule for the week containing `date`, with the biweekly rear-delt
+// exercise appended to Thursday so every screen shows the right week.
+export function getWeekSchedule(date: Date): DaySchedule[] {
+  const slot = getBiweeklySlot(date);
+  return WEEKLY_SCHEDULE.map((day) => {
+    if (day.dayOfWeek !== 'thursday') return day;
+    return {
+      ...day,
+      exercises: [...day.exercises, BIWEEKLY_DELT[slot]],
+    };
+  });
+}
+
 export function getDaySchedule(date: Date): DaySchedule {
   const dayIndex = date.getDay(); // 0 = Sunday, 1 = Monday, ...
   const days: DayOfWeek[] = [
@@ -115,7 +148,14 @@ export function getDaySchedule(date: Date): DaySchedule {
     'thursday', 'friday', 'saturday',
   ];
   const dayOfWeek = days[dayIndex];
-  return WEEKLY_SCHEDULE.find((s) => s.dayOfWeek === dayOfWeek) ?? WEEKLY_SCHEDULE[0];
+  const schedule = WEEKLY_SCHEDULE.find((s) => s.dayOfWeek === dayOfWeek) ?? WEEKLY_SCHEDULE[0];
+  if (dayOfWeek === 'thursday') {
+    return {
+      ...schedule,
+      exercises: [...schedule.exercises, BIWEEKLY_DELT[getBiweeklySlot(date)]],
+    };
+  }
+  return schedule;
 }
 
 export function getWeekDateRange(date: Date): { start: Date; end: Date } {

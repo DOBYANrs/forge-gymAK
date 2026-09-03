@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useSchedule } from '../context/ScheduleContext';
-import { WEEKLY_SCHEDULE } from '../data/schedule';
+import { getWeekSchedule } from '../data/schedule';
 import type { ExercisePattern, DayOfWeek, PresetExercise } from '../types';
 
 const REST_PRESETS = [
@@ -276,6 +276,7 @@ export default function SchedulePage() {
   const [addingToDay, setAddingToDay] = useState<string | null>(null);
   const [editingExercise, setEditingExercise] = useState<{ day: string; index: number } | null>(null);
   const { removeExerciseFromSchedule, getScheduleForDay, clearDaySchedule } = useSchedule();
+  const weekSchedule = getWeekSchedule(new Date());
 
   return (
     <div className="space-y-3 page-enter">
@@ -286,7 +287,7 @@ export default function SchedulePage() {
         </span>
       </div>
 
-      {WEEKLY_SCHEDULE.map((day, dayIdx) => {
+      {weekSchedule.map((day, dayIdx) => {
         const isExpanded = expandedDay === day.dayOfWeek;
         const isAdding = addingToDay === day.dayOfWeek;
         const isEditing = editingExercise?.day === day.dayOfWeek;
