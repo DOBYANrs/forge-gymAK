@@ -22,7 +22,7 @@ export const TIER_PERCENTILES: { name: string; percentile: number; level: number
   { name: 'Untrained', percentile: 0, level: 0 },
   { name: 'Beginner', percentile: 10, level: 1 },
   { name: 'Intermediate', percentile: 25, level: 2 },
-  { name: 'Trained', percentile: 50, level: 3 },
+  { name: 'Upper-Intermediate', percentile: 50, level: 3 },
   { name: 'Advanced', percentile: 70, level: 4 },
   { name: 'Highly Advanced', percentile: 85, level: 5 },
   { name: 'Legendary / Elite', percentile: 95, level: 6 },
