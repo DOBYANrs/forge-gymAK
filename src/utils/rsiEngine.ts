@@ -66,9 +66,6 @@ export interface ExerciseStandard {
   // exercises for a muscle are normalised at composite time).
   targets: { muscle: MuscleGroup; effectiveness: number }[];
   isCore?: boolean; // bodyweight/core move scored by reps, not load
-  // Loaded bodyweight move: the lifter's own bodyweight is added to the
-  // logged load when computing the relative 1RM (e.g. Standing Calf Raise).
-  bodyweightInclusive?: boolean;
   name: string;
 }
 
@@ -180,13 +177,14 @@ export const EXERCISE_STANDARDS: Record<string, ExerciseStandard> = {
     targets: [{ muscle: 'Hamstrings', effectiveness: 0.50 }],
   },
   // ── ADDUCTORS (inner thigh) ──
+  // Calibrated: 40kg x 15 (rel ≈0.95) → Intermediate (~40th pct).
   'Adduction Machine': {
-    name: 'Adduction Machine', rat: [0.25, 0.40, 0.55, 0.80, 1.10], upper: false,
+    name: 'Adduction Machine', rat: [0.55, 0.75, 1.10, 1.40, 1.75], upper: false,
     targets: [{ muscle: 'Adductors', effectiveness: 1.0 }],
   },
   // Legacy name for the same machine — still scored as inner-thigh adductors.
   'Abduction Machine': {
-    name: 'Abduction Machine', rat: [0.25, 0.40, 0.55, 0.80, 1.10], upper: false,
+    name: 'Abduction Machine', rat: [0.55, 0.75, 1.10, 1.40, 1.75], upper: false,
     targets: [{ muscle: 'Adductors', effectiveness: 1.0 }],
   },
   // ── BICEPS ──
@@ -213,7 +211,10 @@ export const EXERCISE_STANDARDS: Record<string, ExerciseStandard> = {
     targets: [{ muscle: 'Calves', effectiveness: 0.50 }],
   },
   'Standing Calf Raise': {
-    name: 'Standing Calf Raise', rat: [0.10, 0.20, 0.35, 0.55, 0.80], upper: false, bodyweightInclusive: true,
+    // The logged load already includes the lifter's bodyweight (they add it),
+    // so it is scored as-is. Calibrated: 102kg (62.8 bw + ~40 barbell) x 20
+    // (rel ≈2.7) → Intermediate (~40th pct).
+    name: 'Standing Calf Raise', rat: [1.50, 2.10, 3.10, 4.00, 5.00], upper: false,
     targets: [{ muscle: 'Calves', effectiveness: 0.50 }],
   },
   // ── CORE / ABS (bodyweight -> scored by reps) ──
@@ -246,6 +247,21 @@ export const CORE_TARGETS: Record<string, number> = {
   'Floor Crunches / Hanging Knee Raises': 20,
   'Front Lever Progression': 5,
   'Dead Hang': 30,
+};
+
+// Time-based bodyweight-hold exercises, scored by held seconds (the logged
+// "reps" value for these is really seconds). Percentile anchors:
+//   <10s Untrained · 30s Intermediate · 60s Upper-Intermediate ·
+//   90s Advanced · 120s Highly Advanced · 180s+ Legendary/Elite.
+export const TIME_ANCHORS: Record<string, [number, number][]> = {
+  'Dead Hang': [
+    [10, 10],   // ~Beginner
+    [30, 25],   // Intermediate
+    [60, 50],   // Upper-Intermediate
+    [90, 70],   // Advanced
+    [120, 85],  // Highly Advanced
+    [180, 95],  // Legendary / Elite
+  ],
 };
 
 // ─── Profile math (weight / height / age) ──────────────────
@@ -335,6 +351,11 @@ export function exercisePercentile(
   if (!std || !best) return 0;
 
   if (std.isCore) {
+    // Bodyweight-hold exercises are scored by held TIME (seconds), not reps.
+    const timeAnchors = TIME_ANCHORS[exerciseName];
+    if (timeAnchors) {
+      return Math.max(0, Math.min(100, interpolate(best.reps, timeAnchors)));
+    }
     const target = CORE_TARGETS[exerciseName] ?? 1;
     const pct = (best.reps / target) * 50; // ~ target reps = 50th percentile
     return Math.max(0, Math.min(100, pct));
@@ -342,10 +363,7 @@ export function exercisePercentile(
 
   const e1rm = best.e1RM;
   if (e1rm <= 0 || profile.bodyWeightKg <= 0) return 0;
-  // Loaded bodyweight moves add the lifter's bodyweight to the logged load
-  // (e.g. standing calf raise carries bodyweight in addition to any barbell).
-  const effectiveLoad = std.bodyweightInclusive ? e1rm + profile.bodyWeightKg : e1rm;
-  const rel = effectiveLoad / profile.bodyWeightKg;
+  const rel = e1rm / profile.bodyWeightKg;
   const bmi = bodyMassIndex(profile.bodyWeightKg, profile.heightCm);
   const leverage = bmiLeverage(bmi, std.upper);
   const age = ageCoefficient(profile.age);
