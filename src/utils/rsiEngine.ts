@@ -71,33 +71,36 @@ export interface ExerciseStandard {
 
 export const EXERCISE_STANDARDS: Record<string, ExerciseStandard> = {
   // ── CHEST ──
+  // Bench Press family: 1RM/BW ratio from Strength Level (150M+ logged lifts).
+  // Machine variant (Yellow Machine Chest Press) scaled ×0.85 per document.
   'Incline Chest Press': {
-    name: 'Incline Chest Press', rat: [0.45, 0.70, 1.10, 1.50, 1.75], upper: true,
+    name: 'Incline Chest Press', rat: [0.40, 0.50, 1.00, 1.25, 1.50], upper: true,
     targets: [{ muscle: 'Chest', effectiveness: 0.40 }],
   },
   'Yellow Machine Chest Press': {
-    name: 'Yellow Machine Chest Press', rat: [0.60, 0.90, 1.40, 1.90, 2.20], upper: true,
+    name: 'Yellow Machine Chest Press', rat: [0.34, 0.43, 0.85, 1.06, 1.28], upper: true,
     targets: [{ muscle: 'Chest', effectiveness: 0.20 }],
   },
   'Cable Fly': {
-    name: 'Cable Fly', rat: [0.25, 0.40, 0.60, 0.90, 1.10], upper: true,
+    name: 'Cable Fly', rat: [0.08, 0.13, 0.25, 0.40, 0.55], upper: true,
     targets: [{ muscle: 'Chest', effectiveness: 0.15 }],
   },
   'Cable Fly 55 Degree': {
-    name: 'Cable Fly 55 Degree', rat: [0.26, 0.42, 0.62, 0.92, 1.12], upper: true,
+    name: 'Cable Fly 55 Degree', rat: [0.08, 0.13, 0.25, 0.40, 0.55], upper: true,
     targets: [{ muscle: 'Chest', effectiveness: 0.15 }],
   },
   'Lower Chest Cable Pulldown': {
-    name: 'Lower Chest Cable Pulldown', rat: [0.28, 0.45, 0.65, 0.95, 1.15], upper: true,
+    name: 'Lower Chest Cable Pulldown', rat: [0.10, 0.16, 0.30, 0.48, 0.65], upper: true,
     targets: [{ muscle: 'Chest', effectiveness: 0.25 }],
   },
   // ── BACK (vertical pull) ──
+  // Lat Pulldown: 1RM/BW ratio from Strength Level.
   'Lat Pulldown': {
-    name: 'Lat Pulldown', rat: [0.50, 0.75, 1.00, 1.50, 1.75], upper: true,
+    name: 'Lat Pulldown', rat: [0.40, 0.50, 0.75, 1.00, 1.50], upper: true,
     targets: [{ muscle: 'Back', effectiveness: 0.35 }],
   },
   'Pull Down': {
-    name: 'Pull Down', rat: [0.50, 0.75, 1.00, 1.50, 1.75], upper: true,
+    name: 'Pull Down', rat: [0.40, 0.50, 0.75, 1.00, 1.50], upper: true,
     targets: [{ muscle: 'Back', effectiveness: 0.35 }],
   },
   '1-Hand Lat Pulldown': {
@@ -110,11 +113,11 @@ export const EXERCISE_STANDARDS: Record<string, ExerciseStandard> = {
   },
   // ── BACK (horizontal / upper-mid row) ──
   'Row Machine 2 Var 2': {
-    name: 'Row Machine 2 Var 2', rat: [0.55, 0.70, 1.00, 1.30, 1.70], upper: true,
+    name: 'Row Machine 2 Var 2', rat: [0.40, 0.50, 0.70, 0.95, 1.25], upper: true,
     targets: [{ muscle: 'Back', effectiveness: 0.40 }],
   },
   'Row Machine 1 Var 2': {
-    name: 'Row Machine 1 Var 2', rat: [0.55, 0.70, 1.00, 1.30, 1.70], upper: true,
+    name: 'Row Machine 1 Var 2', rat: [0.40, 0.50, 0.70, 0.95, 1.25], upper: true,
     targets: [
       { muscle: 'Back', effectiveness: 0.40 },
       { muscle: 'Shoulders', effectiveness: 0.15 },
@@ -135,8 +138,9 @@ export const EXERCISE_STANDARDS: Record<string, ExerciseStandard> = {
     ],
   },
   // ── SHOULDERS ──
+  // Overhead Press (barbell/dumbbell/machine): 1RM/BW ratio from Strength Level.
   'Overhead Press': {
-    name: 'Overhead Press', rat: [0.35, 0.55, 0.75, 1.00, 1.25], upper: true,
+    name: 'Overhead Press', rat: [0.35, 0.40, 0.60, 0.85, 1.10], upper: true,
     targets: [{ muscle: 'Shoulders', effectiveness: 0.50 }],
   },
   'Face Pulls': {
@@ -151,33 +155,39 @@ export const EXERCISE_STANDARDS: Record<string, ExerciseStandard> = {
     targets: [{ muscle: 'Shoulders', effectiveness: 0.30 }],
   },
   // ── LEGS (quad/glute) ──
+  // Squat-proxy (Leg Press): 1RM/BW from Strength Level 50th-95th.
+  // Elite endpoint extended to 3.00 to accommodate heavy leg-press users
+  // (e.g. 160kg×5 at 77kg BW → ratio 2.42 = Advanced, not Legendary).
   'Low-Foot Placement Leg Press': {
-    name: 'Low-Foot Placement Leg Press', rat: [1.30, 2.00, 2.90, 3.90, 5.00], upper: false,
+    name: 'Low-Foot Placement Leg Press', rat: [0.60, 0.75, 1.25, 2.25, 3.00], upper: false,
     targets: [{ muscle: 'Legs', effectiveness: 0.40 }],
   },
   'Low-Foot Leg Press': {
-    name: 'Low-Foot Leg Press', rat: [1.30, 2.00, 2.90, 3.90, 5.00], upper: false,
+    name: 'Low-Foot Leg Press', rat: [0.60, 0.75, 1.25, 2.25, 3.00], upper: false,
     targets: [{ muscle: 'Legs', effectiveness: 0.40 }],
   },
   'Leg Press': {
-    name: 'Leg Press', rat: [1.30, 2.00, 2.90, 3.90, 5.00], upper: false,
+    name: 'Leg Press', rat: [0.60, 0.75, 1.25, 2.25, 3.00], upper: false,
     targets: [{ muscle: 'Legs', effectiveness: 0.40 }],
   },
   'Leg Extension': {
-    name: 'Leg Extension', rat: [0.50, 0.90, 1.25, 1.75, 2.30], upper: false,
+    name: 'Leg Extension', rat: [0.40, 0.50, 0.80, 1.20, 1.60], upper: false,
     targets: [{ muscle: 'Legs', effectiveness: 0.30 }],
   },
   // ── HAMSTRINGS ──
+  // Leg Curl (prone/seated): 1RM/BW ratio from Strength Level.
   'Hamstring Curl': {
-    name: 'Hamstring Curl', rat: [0.45, 0.70, 1.00, 1.45, 1.85], upper: false,
+    name: 'Hamstring Curl', rat: [0.50, 0.75, 1.00, 1.50, 2.00], upper: false,
     targets: [{ muscle: 'Hamstrings', effectiveness: 0.50 }],
   },
   'Leg Curl': {
-    name: 'Leg Curl', rat: [0.45, 0.70, 1.00, 1.45, 1.85], upper: false,
+    name: 'Leg Curl', rat: [0.50, 0.75, 1.00, 1.50, 2.00], upper: false,
     targets: [{ muscle: 'Hamstrings', effectiveness: 0.50 }],
   },
   // ── ADDUCTORS (inner thigh) ──
-  // Calibrated: 40kg x 15 (rel ≈0.95) → Intermediate (~40th pct).
+  // Hip Adduction Machine: relaxed thresholds — machine shows total weight
+  // (both pads combined) so the logged ratio is higher than per-leg standards
+  // assume. Calibrated: 40kg x 15 (rel ≈0.95) → Intermediate (~38th pct).
   'Adduction Machine': {
     name: 'Adduction Machine', rat: [0.55, 0.75, 1.10, 1.40, 1.75], upper: false,
     targets: [{ muscle: 'Adductors', effectiveness: 1.0 }],
@@ -188,12 +198,15 @@ export const EXERCISE_STANDARDS: Record<string, ExerciseStandard> = {
     targets: [{ muscle: 'Adductors', effectiveness: 1.0 }],
   },
   // ── BICEPS ──
+  // Dumbbell / Cable Curl family: 1RM/BW ratio from Strength Level.
+  // Isolation moves have lower absolute ratios than compound.
+  // Spider Curl example: 20×12 → rel 0.446 → Advanced (matches document).
   'Spider Curl': {
-    name: 'Spider Curl', rat: [0.25, 0.38, 0.55, 0.80, 1.10], upper: true,
+    name: 'Spider Curl', rat: [0.08, 0.10, 0.15, 0.40, 0.60], upper: true,
     targets: [{ muscle: 'Biceps', effectiveness: 0.40 }],
   },
   'Biceps Curl / Cable Curl': {
-    name: 'Biceps Curl / Cable Curl', rat: [0.25, 0.38, 0.55, 0.80, 1.10], upper: true,
+    name: 'Biceps Curl / Cable Curl', rat: [0.08, 0.10, 0.15, 0.30, 0.40], upper: true,
     targets: [{ muscle: 'Biceps', effectiveness: 0.30 }],
   },
   // ── TRICEPS ──
