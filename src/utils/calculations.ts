@@ -74,6 +74,7 @@ export const EXERCISE_MUSCLE_MAP: Record<string, string[]> = {
   'Hamstring Curl': ['Hamstrings', 'Legs'],
   'Leg Extension': ['Quads', 'Legs'],
   'Calf Raise': ['Calves', 'Legs'],
+  'Standing Calf Raise': ['Calves', 'Legs'],
   'Cable Crunches': ['Abs'],
   'Oblique Side Switches': ['Abs', 'Core'],
   // Thursday: Back + Shoulders + Core
@@ -87,7 +88,8 @@ export const EXERCISE_MUSCLE_MAP: Record<string, string[]> = {
   'Dead Hang': ['Back', 'Forearms'],
   // Friday: Legs + Abs (Abductors/Adductors focus)
   'Low-Foot Leg Press': ['Quads', 'Legs', 'Hamstrings'],
-  'Abduction Machine': ['Abductors', 'Adductors', 'Legs'],
+  'Adduction Machine': ['Adductors', 'Legs'],
+  'Abduction Machine': ['Adductors', 'Legs'],
   'Floor Crunches / Hanging Knee Raises': ['Abs', 'Core'],
   // Saturday: Chest + Triceps + Biceps + Forearms
   'Yellow Machine Chest Press': ['Chest'],

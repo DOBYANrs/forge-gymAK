@@ -103,8 +103,10 @@ const EXERCISE_MUSCLE_TARGET: Record<string, { primary: string[]; secondary: str
   'Reverse Wrist Curl (Extension)': { primary: ['Forearms'], secondary: [] },
   // Saturday: Legs B (Hamstring/Hip) + Calves + Abs C
   'Hamstring Curl': { primary: ['Hamstrings'], secondary: [] },
-  'Abduction Machine': { primary: ['Abductors', 'Adductors'], secondary: [] },
+  'Adduction Machine': { primary: ['Adductors'], secondary: [] },
+  'Abduction Machine': { primary: ['Adductors'], secondary: [] },
   'Calf Raise': { primary: ['Calves'], secondary: [] },
+  'Standing Calf Raise': { primary: ['Calves'], secondary: [] },
   'Dead Hang': { primary: ['Back', 'Forearms'], secondary: [] },
   'Standard Floor Crunches / Hanging Knee Raises': { primary: ['Abs', 'Core'], secondary: [] },
 };

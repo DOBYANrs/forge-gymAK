@@ -32,7 +32,14 @@ const BACK_MUSCLES: ViewMuscleDef[] = [
   { key: 'adductor', activity: 'Adductors' },
   { key: 'hamstring', activity: 'Hamstrings' },
   { key: 'calves', activity: 'Calves' },
+  { key: 'left-soleus', activity: 'Calves' },
+  { key: 'right-soleus', activity: 'Calves' },
 ];
+
+// Display labels: map internal muscle-group names to user-facing anatomy labels.
+const MUSCLE_LABELS: Record<string, string> = {
+  Core: 'Lower Back',
+};
 
 const ACTIVITY_BY_MUSCLE = new Map<Muscle, MuscleGroup>(
   [...FRONT_MUSCLES, ...BACK_MUSCLES].map(({ key, activity }) => [key, activity]),
@@ -87,6 +94,32 @@ function tagPolygons(container: HTMLElement, view: 'anterior' | 'posterior') {
   }
 }
 
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
+// The stock body-highlighter model ends at the ankles (viewBox 0 0 100 200),
+// so no feet are drawn. Append simple foot shapes below the calves and extend
+// the viewBox so the lower legs / ankles render too.
+const FEET_POINTS: Record<string, string> = {
+  'left-foot':
+    '24,203 22,208 27,213 35,213 39,208 37,201 31,200',
+  'right-foot':
+    '76,203 78,208 73,213 65,213 61,208 63,201 69,200',
+};
+
+const FEET_VIEWBOX = '0 0 100 216';
+
+function appendFeet(svg: SVGSVGElement) {
+  svg.setAttribute('viewBox', FEET_VIEWBOX);
+  for (const [key, points] of Object.entries(FEET_POINTS)) {
+    const poly = document.createElementNS(SVG_NS, 'polygon');
+    poly.setAttribute('points', points);
+    poly.setAttribute('data-muscle', key);
+    poly.style.fill = 'rgba(255,255,255,0.06)';
+    poly.style.cursor = 'pointer';
+    svg.appendChild(poly);
+  }
+}
+
 export default function RankBodyMap({ muscleRanks, activeToday = [] }: RankBodyMapProps) {
   const frontRef = useRef<HTMLDivElement | null>(null);
   const backRef = useRef<HTMLDivElement | null>(null);
@@ -112,7 +145,7 @@ export default function RankBodyMap({ muscleRanks, activeToday = [] }: RankBodyM
       const activity = ACTIVITY_BY_MUSCLE.get(muscle);
       const rank = activity ? rankMap.get(activity) : undefined;
       setTooltip({
-        label: rank?.muscle ?? String(muscle),
+        label: MUSCLE_LABELS[rank?.muscle ?? ''] ?? rank?.muscle ?? String(muscle),
         color: rank?.tier.color ?? 'var(--text-muted)',
         detail: rank && (rank.score ?? 0) > 0
           ? `${rank.tier.name} · Composite ${(rank.score ?? 0).toFixed(0)} / 100${rank.peakScore > 0 ? ` (Peak ${rank.peakWeight}kg × ${rank.peakReps})` : ''}`
@@ -162,8 +195,16 @@ export default function RankBodyMap({ muscleRanks, activeToday = [] }: RankBodyM
       });
     }
 
-    if (frontRef.current) applyPulse(frontRef.current, 'anterior');
-    if (backRef.current) applyPulse(backRef.current, 'posterior');
+    if (frontRef.current) {
+      const fsvg = frontRef.current.querySelector<SVGSVGElement>('svg');
+      if (fsvg) appendFeet(fsvg);
+      applyPulse(frontRef.current, 'anterior');
+    }
+    if (backRef.current) {
+      const bsvg = backRef.current.querySelector<SVGSVGElement>('svg');
+      if (bsvg) appendFeet(bsvg);
+      applyPulse(backRef.current, 'posterior');
+    }
 
     return () => {
       front?.destroy();
@@ -190,13 +231,13 @@ export default function RankBodyMap({ muscleRanks, activeToday = [] }: RankBodyM
           <p className="text-[10px] font-semibold uppercase tracking-wider mb-1" style={{ color: 'var(--text-muted)' }}>
             Front
           </p>
-          <div ref={frontRef} style={{ width: 150, height: 300 }} className="mx-auto" />
+          <div ref={frontRef} style={{ width: 150, height: 324 }} className="mx-auto" />
         </div>
         <div className="text-center">
           <p className="text-[10px] font-semibold uppercase tracking-wider mb-1" style={{ color: 'var(--text-muted)' }}>
             Back
           </p>
-          <div ref={backRef} style={{ width: 150, height: 300 }} className="mx-auto" />
+          <div ref={backRef} style={{ width: 150, height: 324 }} className="mx-auto" />
         </div>
       </div>
 

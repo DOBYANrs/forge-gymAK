@@ -159,6 +159,7 @@ const EXERCISE_TO_MUSCLES: Record<string, MuscleContribution> = {
   'Hamstring Curl':                   helpers.p('Hamstrings'),
   'Leg Extension':                    helpers.p('Legs'),
   'Calf Raise':                       helpers.p('Calves'),
+  'Standing Calf Raise':              helpers.p('Calves'),
   'Cable Crunches':                   helpers.ps(['Abs'], ['Core'], 0.15),
   'Oblique Side Switches':            helpers.ps(['Abs'], ['Core'], 0.15),
   // Thursday: Back + Shoulders + Core
@@ -170,9 +171,10 @@ const EXERCISE_TO_MUSCLES: Record<string, MuscleContribution> = {
   'Face Pulls':                       helpers.ps(['Shoulders', 'Back'], ['Core'], 0.10),
   'Front Lever Progression':          helpers.ps(['Back', 'Abs'], ['Core'], 0.15),
   'Dead Hang':                        helpers.ps(['Back'], ['Forearms'], 0.15),
-  // Friday: Legs + Abs (Abductors/Adductors focus)
+  // Friday: Legs + Abs (Adductor focus — the inner thigh, not the outer abductor)
   'Low-Foot Leg Press':               helpers.ps(['Legs'], ['Hamstrings'], 0.10),
-  'Abduction Machine':                helpers.p('Abductors', 'Adductors'),
+  'Adduction Machine':                helpers.p('Adductors'),
+  'Abduction Machine':                helpers.p('Adductors'),
   'Floor Crunches / Hanging Knee Raises': helpers.ps(['Abs'], ['Core'], 0.15),
   // Saturday: Chest + Triceps + Biceps + Forearms
   'Yellow Machine Chest Press':       helpers.p('Chest'),

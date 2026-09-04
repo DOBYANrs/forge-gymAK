@@ -66,6 +66,9 @@ export interface ExerciseStandard {
   // exercises for a muscle are normalised at composite time).
   targets: { muscle: MuscleGroup; effectiveness: number }[];
   isCore?: boolean; // bodyweight/core move scored by reps, not load
+  // Loaded bodyweight move: the lifter's own bodyweight is added to the
+  // logged load when computing the relative 1RM (e.g. Standing Calf Raise).
+  bodyweightInclusive?: boolean;
   name: string;
 }
 
@@ -176,10 +179,15 @@ export const EXERCISE_STANDARDS: Record<string, ExerciseStandard> = {
     name: 'Leg Curl', rat: [0.45, 0.70, 1.00, 1.45, 1.85], upper: false,
     targets: [{ muscle: 'Hamstrings', effectiveness: 0.50 }],
   },
-  // ── ABDUCTORS ──
+  // ── ADDUCTORS (inner thigh) ──
+  'Adduction Machine': {
+    name: 'Adduction Machine', rat: [0.25, 0.40, 0.55, 0.80, 1.10], upper: false,
+    targets: [{ muscle: 'Adductors', effectiveness: 1.0 }],
+  },
+  // Legacy name for the same machine — still scored as inner-thigh adductors.
   'Abduction Machine': {
     name: 'Abduction Machine', rat: [0.25, 0.40, 0.55, 0.80, 1.10], upper: false,
-    targets: [{ muscle: 'Abductors', effectiveness: 1.0 }],
+    targets: [{ muscle: 'Adductors', effectiveness: 1.0 }],
   },
   // ── BICEPS ──
   'Spider Curl': {
@@ -204,6 +212,10 @@ export const EXERCISE_STANDARDS: Record<string, ExerciseStandard> = {
     name: 'Calf Raise', rat: [0.50, 1.00, 1.50, 2.25, 3.25], upper: false,
     targets: [{ muscle: 'Calves', effectiveness: 0.50 }],
   },
+  'Standing Calf Raise': {
+    name: 'Standing Calf Raise', rat: [0.10, 0.20, 0.35, 0.55, 0.80], upper: false, bodyweightInclusive: true,
+    targets: [{ muscle: 'Calves', effectiveness: 0.50 }],
+  },
   // ── CORE / ABS (bodyweight -> scored by reps) ──
   'Cable Crunches': {
     name: 'Cable Crunches', rat: [0, 0, 0, 0, 0], upper: false, isCore: true, targets: [{ muscle: 'Abs', effectiveness: 0.25 }],
@@ -218,7 +230,7 @@ export const EXERCISE_STANDARDS: Record<string, ExerciseStandard> = {
     name: 'Front Lever Progression', rat: [0, 0, 0, 0, 0], upper: false, isCore: true, targets: [{ muscle: 'Abs', effectiveness: 0.20 }],
   },
   'Dead Hang': {
-    name: 'Dead Hang', rat: [0, 0, 0, 0, 0], upper: false, isCore: true, targets: [{ muscle: 'Abs', effectiveness: 0.15 }],
+    name: 'Dead Hang', rat: [0, 0, 0, 0, 0], upper: false, isCore: true, targets: [{ muscle: 'Forearms', effectiveness: 0.25 }],
   },
   // ── FOREARMS ──
   'Wrist Flexion & Extension Superset': {
@@ -330,7 +342,10 @@ export function exercisePercentile(
 
   const e1rm = best.e1RM;
   if (e1rm <= 0 || profile.bodyWeightKg <= 0) return 0;
-  const rel = e1rm / profile.bodyWeightKg;
+  // Loaded bodyweight moves add the lifter's bodyweight to the logged load
+  // (e.g. standing calf raise carries bodyweight in addition to any barbell).
+  const effectiveLoad = std.bodyweightInclusive ? e1rm + profile.bodyWeightKg : e1rm;
+  const rel = effectiveLoad / profile.bodyWeightKg;
   const bmi = bodyMassIndex(profile.bodyWeightKg, profile.heightCm);
   const leverage = bmiLeverage(bmi, std.upper);
   const age = ageCoefficient(profile.age);
