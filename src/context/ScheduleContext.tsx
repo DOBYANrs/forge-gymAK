@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import type { PresetExercise, DayOfWeek } from '../types';
+import { getWeekSchedule } from '../data/schedule';
 import {
   isFirebaseConfigured,
   subscribeToSchedule,
@@ -21,6 +22,10 @@ const SCHEDULE_STORAGE_KEY = 'kasaint_gym_custom_schedule';
 const SCHEDULE_VERSION_KEY = 'kasaint_gym_schedule_version';
 // Bump this whenever WEEKLY_SCHEDULE changes to force-clear old custom data
 const CURRENT_SCHEDULE_VERSION = '3.0';
+// Separate reset guard: clearing this key only wipes the custom SCHEDULE (not
+// workout logs). Bumped once to repair days collapsed by the old edit flow.
+const SCHEDULE_RESET_KEY = 'kasaint_gym_custom_schedule_reset';
+const CURRENT_SCHEDULE_RESET_VERSION = '4.0';
 
 const EMPTY_SCHEDULE: Record<DayOfWeek, PresetExercise[]> = {
   sunday: [],
@@ -34,6 +39,16 @@ const EMPTY_SCHEDULE: Record<DayOfWeek, PresetExercise[]> = {
 
 function loadFromStorage(): Record<DayOfWeek, PresetExercise[]> {
   try {
+    const resetVersion = localStorage.getItem(SCHEDULE_RESET_KEY);
+    if (resetVersion !== CURRENT_SCHEDULE_RESET_VERSION) {
+      // One-time repair: the old edit flow could collapse a whole day down to a
+      // single exercise (edits overwrote the raw custom array instead of the full
+      // day). Clear only the custom schedule so every day returns to clean
+      // defaults; workout logs are intentionally left untouched.
+      localStorage.removeItem(SCHEDULE_STORAGE_KEY);
+      localStorage.setItem(SCHEDULE_RESET_KEY, CURRENT_SCHEDULE_RESET_VERSION);
+      return { ...EMPTY_SCHEDULE };
+    }
     const storedVersion = localStorage.getItem(SCHEDULE_VERSION_KEY);
     if (storedVersion !== CURRENT_SCHEDULE_VERSION) {
       // New schedule version — wipe ALL old custom data
@@ -70,6 +85,14 @@ function saveToStorage(data: Record<DayOfWeek, PresetExercise[]>) {
     }
     localStorage.setItem(SCHEDULE_STORAGE_KEY, JSON.stringify(toSave));
   } catch {}
+}
+
+// Returns the built-in default exercises for a weekday (includes that week's
+// biweekly Thursday rear-delt rotation). Used as the base when the user edits a
+// day that has no customization yet, so a single edit never drops the rest.
+function defaultExercisesFor(dayOfWeek: DayOfWeek): PresetExercise[] {
+  const week = getWeekSchedule(new Date());
+  return week.find((d) => d.dayOfWeek === dayOfWeek)?.exercises ?? [];
 }
 
 const ScheduleContext = createContext<ScheduleContextType | null>(null);
@@ -121,30 +144,35 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const addExerciseToSchedule = useCallback((dayOfWeek: DayOfWeek, exercise: PresetExercise) => {
-    setFullSchedule((prev) => ({
-      ...prev,
-      [dayOfWeek]: [...(prev[dayOfWeek] || []), exercise],
-    }));
+    setFullSchedule((prev) => {
+      // Any customized day holds the COMPLETE exercise list, so start from the
+      // current full day (custom if present, otherwise the built-in defaults).
+      const current = prev[dayOfWeek] && prev[dayOfWeek].length > 0
+        ? prev[dayOfWeek]
+        : defaultExercisesFor(dayOfWeek);
+      return { ...prev, [dayOfWeek]: [...current, exercise] };
+    });
   }, []);
 
   const updateExerciseInSchedule = useCallback((dayOfWeek: DayOfWeek, index: number, exercise: PresetExercise) => {
     setFullSchedule((prev) => {
-      const updated = { ...prev };
-      if (!updated[dayOfWeek]) updated[dayOfWeek] = [];
-      while (updated[dayOfWeek].length <= index) {
-        updated[dayOfWeek].push({ name: '', pattern: 'normal', defaultSets: 3 });
-      }
-      updated[dayOfWeek] = updated[dayOfWeek].map((ex, i) => (i === index ? exercise : ex));
-      return updated;
+      const current = prev[dayOfWeek] && prev[dayOfWeek].length > 0
+        ? prev[dayOfWeek]
+        : defaultExercisesFor(dayOfWeek);
+      // Guard out-of-range edits instead of padding with placeholder entries —
+      // padding is what used to collapse a whole day down to a single exercise.
+      if (index < 0 || index >= current.length) return prev;
+      return { ...prev, [dayOfWeek]: current.map((ex, i) => (i === index ? exercise : ex)) };
     });
   }, []);
 
   const removeExerciseFromSchedule = useCallback((dayOfWeek: DayOfWeek, index: number) => {
     setFullSchedule((prev) => {
-      const updated = { ...prev };
-      if (!updated[dayOfWeek]) updated[dayOfWeek] = [];
-      updated[dayOfWeek] = updated[dayOfWeek].filter((_, i) => i !== index);
-      return updated;
+      const current = prev[dayOfWeek] && prev[dayOfWeek].length > 0
+        ? prev[dayOfWeek]
+        : defaultExercisesFor(dayOfWeek);
+      if (index < 0 || index >= current.length) return prev;
+      return { ...prev, [dayOfWeek]: current.filter((_, i) => i !== index) };
     });
   }, []);
 
